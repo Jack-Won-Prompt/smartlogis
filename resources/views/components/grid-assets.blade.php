@@ -21,9 +21,38 @@
             .stui-hold { background: #edf1f4; color: #6b7a88; }
             .stui-act { cursor: pointer; padding: 2px 5px; border-radius: 6px; }
             .stui-act:hover { background: #eef2f5; }
-            /* 페이지네이션(tui-pagination) 브랜드화 */
-            .tui-pagination .tui-page-btn { color: #7a8a99; }
-            .tui-pagination .tui-is-selected { background: #2551c4 !important; color: #fff !important; border-radius: 8px; }
+            /* 페이지네이션 — 매우 세련된 스타일 */
+            .tui-pagination { display: flex; align-items: center; justify-content: center; gap: 3px; padding: 16px 0 6px; }
+            .tui-pagination .tui-page-btn {
+                display: inline-flex; align-items: center; justify-content: center;
+                min-width: 32px; height: 32px; padding: 0 7px; margin: 0;
+                border: 0 !important; background: transparent !important; box-shadow: none;
+                border-radius: 9px; color: #6b7a88;
+                font-family: 'IBM Plex Mono', monospace; font-size: 13px; font-weight: 500;
+                text-decoration: none; cursor: pointer; transition: background .15s ease, color .15s ease, box-shadow .15s ease;
+            }
+            .tui-pagination a.tui-page-btn:hover { background: #eef3fe !important; color: #2551c4; }
+            .tui-pagination strong.tui-page-btn.tui-is-selected {
+                background: #2551c4 !important; color: #fff !important; font-weight: 700;
+                box-shadow: 0 3px 10px rgba(37, 81, 196, .30);
+            }
+            .tui-pagination .tui-page-btn.tui-is-disabled { opacity: .28; cursor: default; pointer-events: none; }
+            /* 네비(처음/이전/다음/끝) — 깔끔한 셰브론 */
+            .tui-pagination .tui-first, .tui-pagination .tui-last { min-width: 30px; }
+            .tui-pagination .tui-ico-first, .tui-pagination .tui-ico-prev,
+            .tui-pagination .tui-ico-next, .tui-pagination .tui-ico-last {
+                display: inline-flex; align-items: center; justify-content: center;
+                width: auto; height: auto; margin: 0; background: none !important;
+                font-size: 0; text-indent: 0; overflow: visible; border: 0;
+            }
+            .tui-pagination .tui-ico-first::after { content: '«'; }
+            .tui-pagination .tui-ico-prev::after  { content: '‹'; }
+            .tui-pagination .tui-ico-next::after  { content: '›'; }
+            .tui-pagination .tui-ico-last::after  { content: '»'; }
+            .tui-pagination .tui-ico-first::after, .tui-pagination .tui-ico-prev::after,
+            .tui-pagination .tui-ico-next::after, .tui-pagination .tui-ico-last::after {
+                font-family: system-ui, sans-serif; font-size: 15px; font-weight: 600; line-height: 1; color: inherit;
+            }
         </style>
     @endpush
     @push('scripts')
