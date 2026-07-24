@@ -34,7 +34,7 @@
             :template="route('master.users.template')"
             :failures="url('master/users/failures')"
             name="사용자"
-            note="양식(아이디·이름·역할·소속코드·이메일)을 작성해 업로드하세요. 아이디가 같으면 갱신됩니다."
+            note="양식(이메일·이름·역할·소속코드)을 작성해 업로드하세요. 이메일이 같으면 갱신됩니다."
             params="{ keyword: document.getElementById('f-keyword').value, role: document.getElementById('f-role').value, status: document.getElementById('f-status').value }" />
         <div class="flex items-center gap-2">
             <button id="btn-delete" class="btn-ghost !py-2 !text-sm !text-crit-600 !ring-crit-600/20 hover:!bg-crit-100">선택 삭제</button>
@@ -64,13 +64,13 @@
                 params: () => ({ keyword:f('f-keyword'), role:f('f-role'), status:f('f-status') }),
                 defaults: { login_id:'', email:'', name:'', role:'HOSPITAL', org_id:'', status:'ACTIVE' },
                 columns: [
-                    { title:'아이디', field:'login_id', editor:'text', html: window.SmartTUI.mono },
+                    { title:'이메일 (로그인 계정)', field:'email', editor:'text', html: window.SmartTUI.mono, width:230 },
                     { title:'이름', field:'name', editor:'text' },
                     { title:'역할', field:'role', editor:'list', values:roleMap, html:(v)=>roleMap[v]||v },
                     { title:'소속', field:'org_id', editor:'list', values:orgMap, html:(v,row)=>orgMap[v]??row.org_name??'' },
-                    { title:'이메일', field:'email', editor:'text' },
                     { title:'상태', field:'status', editor:'list', values:statusMap,
                       html:(v)=>`<span class="stui-badge stui-${statusTones[v]||'hold'}">${statusMap[v]||v}</span>` },
+                    { title:'계정ID', field:'login_id', html: window.SmartTUI.mono },
                 ],
             });
 

@@ -37,8 +37,8 @@ class UserMasterController extends Controller
     private function rules(?int $ignore = null): array
     {
         return [
-            'login_id' => ['required', 'string', 'alpha_dash', 'max:50', Rule::unique('users', 'login_id')->ignore($ignore)],
-            'email' => ['nullable', 'email', 'max:255', Rule::unique('users', 'email')->ignore($ignore)],
+            'email' => ['required', 'email', 'max:255', Rule::unique('users', 'email')->ignore($ignore)],
+            'login_id' => ['nullable', 'string', 'max:255', Rule::unique('users', 'login_id')->ignore($ignore)],
             'name' => ['required', 'string', 'max:50'],
             'role' => ['required', Rule::enum(OrgType::class)],
             'org_id' => ['required', 'integer', Rule::exists('organizations', 'id')],
@@ -77,6 +77,10 @@ class UserMasterController extends Controller
     {
         $data = array_merge(['status' => UserStatus::ACTIVE->value], $request->all());
         $validated = Validator::make($data, $this->rules())->validate();
+        // login_id 미입력 시 이메일을 로그인 계정으로 사용
+        if (empty($validated['login_id'])) {
+            $validated['login_id'] = $validated['email'];
+        }
         $validated['is_active'] = $validated['status'] === UserStatus::ACTIVE->value;
         if ($validated['status'] === UserStatus::ACTIVE->value) {
             $validated['approved_at'] = now();

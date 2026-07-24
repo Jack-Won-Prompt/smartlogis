@@ -12,7 +12,7 @@ class UsersExport extends BaseQueryExport
     /** @return array<int, string> */
     public function headings(): array
     {
-        return ['아이디', '이름', '역할', '소속', '이메일', '상태'];
+        return ['이메일', '이름', '역할', '소속', '상태', '계정ID'];
     }
 
     /**
@@ -22,12 +22,12 @@ class UsersExport extends BaseQueryExport
     public function map($row): array
     {
         return [
-            $row->login_id,
+            $row->email,
             $row->name,
             $row->role->label(),
             $row->organization->name,
-            $row->email,
             $row->status->label(),
+            $row->login_id,
         ];
     }
 }

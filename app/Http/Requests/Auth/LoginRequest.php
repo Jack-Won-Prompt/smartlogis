@@ -15,7 +15,7 @@ use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 /**
- * 로그인 ID + 비밀번호 인증. 비활성(is_active=false) 계정은 거부한다.
+ * 이메일 + 비밀번호 인증. 비활성(status != ACTIVE) 계정은 거부한다.
  */
 class LoginRequest extends FormRequest
 {
@@ -30,7 +30,7 @@ class LoginRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'login_id' => ['required', 'string'],
+            'email' => ['required', 'string', 'email:filter'], // filter: CRLF 거부(CVE-2026-48019 완화)
             'password' => ['required', 'string'],
         ];
     }
@@ -43,7 +43,7 @@ class LoginRequest extends FormRequest
         $this->ensureIsNotRateLimited();
 
         $credentials = [
-            'login_id' => $this->string('login_id')->toString(),
+            'email' => $this->string('email')->toString(),
             'password' => $this->string('password')->toString(),
             'status' => UserStatus::ACTIVE->value,
         ];
@@ -52,7 +52,7 @@ class LoginRequest extends FormRequest
             RateLimiter::hit($this->throttleKey());
 
             throw ValidationException::withMessages([
-                'login_id' => $this->failureMessage(),
+                'email' => $this->failureMessage(),
             ]);
         }
 
@@ -73,7 +73,7 @@ class LoginRequest extends FormRequest
         $seconds = RateLimiter::availableIn($this->throttleKey());
 
         throw ValidationException::withMessages([
-            'login_id' => trans('auth.throttle', [
+            'email' => trans('auth.throttle', [
                 'seconds' => $seconds,
                 'minutes' => ceil($seconds / 60),
             ]),
@@ -82,7 +82,7 @@ class LoginRequest extends FormRequest
 
     public function throttleKey(): string
     {
-        return Str::transliterate(Str::lower($this->string('login_id')->toString()).'|'.$this->ip());
+        return Str::transliterate(Str::lower($this->string('email')->toString()).'|'.$this->ip());
     }
 
     /**
@@ -91,7 +91,7 @@ class LoginRequest extends FormRequest
     private function failureMessage(): string
     {
         $user = User::query()
-            ->where('login_id', $this->string('login_id')->toString())
+            ->where('email', $this->string('email')->toString())
             ->first();
 
         return match ($user?->status) {

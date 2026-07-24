@@ -37,7 +37,6 @@ class RegisteredUserController extends Controller
             'biz_reg_no' => ['nullable', 'string', 'max:20'],
             'tel' => ['nullable', 'string', 'max:30'],
             'name' => ['required', 'string', 'max:50'],
-            'login_id' => ['required', 'string', 'alpha_dash', 'min:4', 'max:50', 'unique:users,login_id'],
             'email' => ['required', 'email:filter', 'max:255', 'unique:users,email'], // filter: CRLF 거부(CVE-2026-48019 완화)
             'password' => ['required', 'confirmed', Password::min(8)],
             'agree' => ['accepted'],
@@ -45,7 +44,6 @@ class RegisteredUserController extends Controller
             'role' => '거래처 유형',
             'org_name' => '거래처명',
             'name' => '담당자명',
-            'login_id' => '아이디',
             'email' => '이메일',
             'password' => '비밀번호',
             'agree' => '약관 동의',
@@ -64,7 +62,7 @@ class RegisteredUserController extends Controller
             ]);
 
             User::create([
-                'login_id' => $validated['login_id'],
+                'login_id' => $validated['email'], // 이메일이 로그인 계정(내부 login_id 컬럼과 동일 값)
                 'email' => $validated['email'],
                 'name' => $validated['name'],
                 'role' => $role,

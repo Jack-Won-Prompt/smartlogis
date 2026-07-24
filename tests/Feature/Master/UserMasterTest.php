@@ -31,28 +31,28 @@ it('새 사용자를 등록하면 임시 비밀번호가 해시로 발급된다'
     $org = Organization::factory()->hospital()->create();
 
     $res = $this->postJson('/master/users', [
-        'login_id' => 'newuser', 'name' => '신규',
+        'email' => 'newuser@smartlogis.test', 'name' => '신규',
         'role' => OrgType::HOSPITAL->value, 'org_id' => $org->id,
-    ])->assertOk()->assertJsonPath('login_id', 'newuser');
+    ])->assertOk()->assertJsonPath('login_id', 'newuser@smartlogis.test'); // login_id 미입력 → 이메일로 자동 세팅
 
     $temp = $res->json('temp_password');
     expect($temp)->not->toBeEmpty();
 
-    $user = User::where('login_id', 'newuser')->first();
+    $user = User::where('email', 'newuser@smartlogis.test')->first();
     expect($user)->not->toBeNull()
         ->and($user->status)->toBe(UserStatus::ACTIVE)
         ->and((bool) $user->is_active)->toBeTrue()
         ->and(Hash::check($temp, $user->password))->toBeTrue(); // 응답 평문이 저장 해시와 일치
 });
 
-it('중복 login_id 는 422를 반환한다', function () {
+it('중복 이메일 는 422를 반환한다', function () {
     actingAsRole(OrgType::HQ);
     $org = Organization::factory()->hospital()->create();
-    User::factory()->create(['login_id' => 'dupuser', 'org_id' => $org->id]);
+    User::factory()->create(['email' => 'dup@smartlogis.test', 'org_id' => $org->id]);
 
     $this->postJson('/master/users', [
-        'login_id' => 'dupuser', 'name' => '중복', 'role' => OrgType::HOSPITAL->value, 'org_id' => $org->id,
-    ])->assertStatus(422)->assertJsonValidationErrorFor('login_id');
+        'email' => 'dup@smartlogis.test', 'name' => '중복', 'role' => OrgType::HOSPITAL->value, 'org_id' => $org->id,
+    ])->assertStatus(422)->assertJsonValidationErrorFor('email');
 });
 
 it('인라인으로 이름을 수정한다', function () {

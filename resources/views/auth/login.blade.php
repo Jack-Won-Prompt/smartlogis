@@ -18,9 +18,9 @@
         @csrf
 
         <x-auth.field
-            name="login_id" label="아이디" required autofocus autocomplete="username"
-            placeholder="예: hospital-seoul"
-            :icon="'<path d=\'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8ZM4 21a8 8 0 0 1 16 0\'/>'" />
+            name="email" label="이메일" type="email" required autofocus autocomplete="username"
+            placeholder="예: hospital@sammes.co.kr"
+            :icon="'<rect x=\'3\' y=\'5\' width=\'18\' height=\'14\' rx=\'2\'/><path d=\'m3 7 9 6 9-6\'/>'" />
 
         <div x-data="{ show: false }">
             <div class="mb-1.5 flex items-center justify-between">
@@ -56,7 +56,7 @@
                     {{ $message }}
                 </p>
             @enderror
-            @error('login_id')
+            @error('email')
                 <p class="mt-1.5 flex items-center gap-1 text-xs text-crit-600">
                     <svg class="h-3.5 w-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 8v4M12 16h.01" stroke-linecap="round"/></svg>
                     {{ $message }}

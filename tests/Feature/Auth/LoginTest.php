@@ -12,17 +12,17 @@ it('로그인 화면을 렌더한다', function () {
     $this->get('/login')->assertOk();
 });
 
-it('로그인 ID와 비밀번호로 인증된다', function () {
+it('이메일과 비밀번호로 인증된다', function () {
     $org = Organization::factory()->hq()->create();
     $user = User::factory()->create([
-        'login_id' => 'hq',
+        'email' => 'hq@smartlogis.test',
         'password' => Hash::make('secret123'),
         'role' => OrgType::HQ,
         'org_id' => $org->id,
     ]);
 
     $this->post('/login', [
-        'login_id' => 'hq',
+        'email' => 'hq@smartlogis.test',
         'password' => 'secret123',
     ])->assertRedirect(route('workspace'));
 
@@ -32,15 +32,15 @@ it('로그인 ID와 비밀번호로 인증된다', function () {
 it('잘못된 비밀번호는 거부된다', function () {
     $org = Organization::factory()->hq()->create();
     User::factory()->create([
-        'login_id' => 'hq',
+        'email' => 'hq@smartlogis.test',
         'password' => Hash::make('secret123'),
         'org_id' => $org->id,
     ]);
 
     $this->post('/login', [
-        'login_id' => 'hq',
+        'email' => 'hq@smartlogis.test',
         'password' => 'wrong',
-    ])->assertSessionHasErrors('login_id');
+    ])->assertSessionHasErrors('email');
 
     $this->assertGuest();
 });
@@ -48,15 +48,15 @@ it('잘못된 비밀번호는 거부된다', function () {
 it('비활성 계정은 로그인할 수 없다', function () {
     $org = Organization::factory()->hq()->create();
     User::factory()->inactive()->create([
-        'login_id' => 'old',
+        'email' => 'old@smartlogis.test',
         'password' => Hash::make('secret123'),
         'org_id' => $org->id,
     ]);
 
     $this->post('/login', [
-        'login_id' => 'old',
+        'email' => 'old@smartlogis.test',
         'password' => 'secret123',
-    ])->assertSessionHasErrors('login_id');
+    ])->assertSessionHasErrors('email');
 
     $this->assertGuest();
 });

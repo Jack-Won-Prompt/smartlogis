@@ -29,7 +29,7 @@
     {{-- ── 사이드바 ─────────────────────────────────────── --}}
     <aside class="flex w-[232px] shrink-0 flex-col bg-navy" :class="navOpen ? 'fixed inset-y-0 z-50' : 'hidden lg:flex'">
         <div class="flex h-14 items-center border-b border-white/5 px-5">
-            <img src="{{ asset('images/smartlogis_300x100_dark_preview.png') }}" alt="SmartLogis" class="h-8 w-auto object-contain">
+            <img src="{{ asset('images/smartlogis_300x100_dark_preview.png') }}" alt="SmartLogis" class="w-auto object-contain">
         </div>
         <nav class="flex flex-1 flex-col gap-5 overflow-y-auto px-3 py-5">
             @foreach($visibleGroups as [$groupLabel, $groupIcon, $items])

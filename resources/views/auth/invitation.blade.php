@@ -20,8 +20,8 @@
                 <dd class="mt-0.5 font-semibold text-ink-900">{{ $invitation->role->label() }}</dd>
             </div>
             <div>
-                <dt class="text-xs text-ink-400">아이디</dt>
-                <dd class="mt-0.5 font-mono font-semibold text-ink-900">{{ $invitation->login_id }}</dd>
+                <dt class="text-xs text-ink-400">이메일 (로그인 계정)</dt>
+                <dd class="mt-0.5 font-mono font-semibold text-ink-900">{{ $invitation->email }}</dd>
             </div>
         </dl>
     </div>

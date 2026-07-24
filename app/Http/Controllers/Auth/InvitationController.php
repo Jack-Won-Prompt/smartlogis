@@ -37,7 +37,7 @@ class InvitationController extends Controller
 
         DB::transaction(function () use ($invitation, $request) {
             $user = User::create([
-                'login_id' => $invitation->login_id,
+                'login_id' => $invitation->email, // 이메일이 로그인 계정
                 'email' => $invitation->email,
                 'name' => $invitation->name,
                 'role' => $invitation->role,

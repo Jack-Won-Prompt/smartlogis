@@ -45,13 +45,10 @@
             <span class="h-px flex-1 bg-slate-100"></span>
         </div>
 
-        <div class="grid grid-cols-2 gap-4">
-            <x-auth.field name="name" label="담당자명" required placeholder="홍길동" autocomplete="name" />
-            <x-auth.field name="login_id" label="아이디" required placeholder="영문/숫자" autocomplete="username" />
-        </div>
+        <x-auth.field name="name" label="담당자명" required placeholder="홍길동" autocomplete="name" />
 
-        <x-auth.field name="email" label="이메일" type="email" required placeholder="you@company.com" autocomplete="email"
-            hint="승인 결과와 초대 링크가 이 주소로 발송됩니다."
+        <x-auth.field name="email" label="이메일 (로그인 계정)" type="email" required placeholder="you@company.com" autocomplete="email"
+            hint="이 이메일이 로그인 아이디가 됩니다. 승인 결과와 초대 링크도 이 주소로 발송됩니다."
             :icon="'<rect x=\'3\' y=\'5\' width=\'18\' height=\'14\' rx=\'2\'/><path d=\'m3 7 9 6 9-6\'/>'" />
 
         <div class="grid grid-cols-2 gap-4">

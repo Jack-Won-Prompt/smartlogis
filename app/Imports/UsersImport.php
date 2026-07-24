@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 
 /**
- * 사용자 마스터 엑셀 업로드. 아이디 기준 upsert. 소속은 조직코드로 매핑, 역할은 라벨/코드 허용.
+ * 사용자 마스터 엑셀 업로드. 이메일 기준 upsert(이메일=로그인 계정). 소속은 조직코드로 매핑, 역할은 라벨/코드 허용.
  * 신규 계정은 임시 비밀번호를 해시로 발급한다(엑셀에는 노출하지 않음).
  */
 class UsersImport extends BaseRowImport
@@ -24,18 +24,17 @@ class UsersImport extends BaseRowImport
     protected function rules(): array
     {
         return [
-            '아이디' => ['required', 'string', 'alpha_dash', 'max:50'],
+            '이메일' => ['required', 'email', 'max:255'],
             '이름' => ['required', 'string', 'max:50'],
             '역할' => ['required', 'string'],
             '소속코드' => ['required', 'string'],
-            '이메일' => ['nullable', 'email', 'max:255'],
         ];
     }
 
     /** @return array<string, string> */
     protected function attributes(): array
     {
-        return ['아이디' => '아이디', '이름' => '이름', '역할' => '역할', '소속코드' => '소속코드'];
+        return ['이메일' => '이메일', '이름' => '이름', '역할' => '역할', '소속코드' => '소속코드'];
     }
 
     /** @param  array<string, mixed>  $row */
@@ -46,12 +45,13 @@ class UsersImport extends BaseRowImport
             throw new \RuntimeException("소속코드에 해당하는 거래처가 없습니다: {$row['소속코드']}");
         }
         $role = $this->role((string) $row['역할']);
+        $email = (string) $row['이메일'];
 
         User::updateOrCreate(
-            ['login_id' => (string) $row['아이디']],
+            ['email' => $email],
             [
+                'login_id' => $email, // 이메일이 로그인 계정
                 'name' => (string) $row['이름'],
-                'email' => $row['이메일'] ?? null,
                 'role' => $role,
                 'org_id' => $orgId,
                 'status' => UserStatus::ACTIVE,
@@ -80,6 +80,6 @@ class UsersImport extends BaseRowImport
     /** @return array<int, string> */
     public static function columns(): array
     {
-        return ['아이디', '이름', '역할', '소속코드', '이메일'];
+        return ['이메일', '이름', '역할', '소속코드'];
     }
 }

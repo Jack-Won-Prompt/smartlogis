@@ -124,7 +124,9 @@
       "Bash(./vendor/bin/pint resources *)",
       "Bash(grep -vE \"confirmDialog|data-|//|autocomplete|\\\\.confirm\\\\b\")",
       "Bash(curl -s -o /dev/null -w '%{http_code}' http://localhost/smartlogis/favicon.svg)",
-      "Bash(echo \"favicon.svg 접근: $\\(curl -s -o /dev/null -w '%{http_code}' http://localhost/smartlogis/favicon.svg\\)\")"
+      "Bash(echo \"favicon.svg 접근: $\\(curl -s -o /dev/null -w '%{http_code}' http://localhost/smartlogis/favicon.svg\\)\")",
+      "Bash(vendor/bin/pint app/Http/Requests/Auth app/Http/Controllers/Auth app/Http/Controllers/Master/UserMasterController.php app/Imports/UsersImport.php app/Exports/UsersExport.php --quiet)",
+      "Bash(vendor/bin/phpstan analyse *)"
     ],
     "additionalDirectories": [
       "\\tmp",

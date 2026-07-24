@@ -29,7 +29,7 @@ it('유효한 초대 링크는 수락 화면을 보여준다', function () {
 
     $this->get(route('invitation.show', $invitation->token))
         ->assertOk()
-        ->assertSee($invitation->login_id);
+        ->assertSee($invitation->email);
 });
 
 it('만료된 초대는 410을 반환한다', function () {
@@ -46,12 +46,13 @@ it('초대 수락 시 최초 비밀번호로 ACTIVE 계정이 생성된다', fun
         'password_confirmation' => 'password123',
     ])->assertRedirect(route('login'));
 
-    $user = User::where('login_id', 'doc1')->firstOrFail();
+    $user = User::where('email', 'doc@hosp.test')->firstOrFail();
     expect($user->status)->toBe(UserStatus::ACTIVE);
+    expect($user->login_id)->toBe('doc@hosp.test'); // 이메일이 로그인 계정
     expect($invitation->fresh()->accepted_at)->not->toBeNull();
 
     // 설정한 비밀번호로 로그인 가능
-    $this->post('/login', ['login_id' => 'doc1', 'password' => 'password123'])
+    $this->post('/login', ['email' => 'doc@hosp.test', 'password' => 'password123'])
         ->assertRedirect(route('workspace'));
 });
 
