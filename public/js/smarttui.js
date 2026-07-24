@@ -56,6 +56,8 @@
                         col.editor = { type: 'select', options: { listItems: Object.entries(c.values || {}).map(([value, text]) => ({ text: String(text), value: isNaN(value) ? value : Number(value) })) } };
                     } else if (c.editor === 'checkbox') {
                         col.editor = { type: 'select', options: { listItems: [{ text: '사용', value: 1 }, { text: '중지', value: 0 }] } };
+                    } else if (c.editor === 'date') {
+                        col.editor = { type: 'datePicker', options: { format: 'yyyy-MM-dd' } }; // 날짜 편집(tui-date-picker)
                     } else {
                         col.editor = 'text';
                     }
@@ -92,8 +94,18 @@
                 bodyHeight: opts.height || 'auto',
                 minBodyHeight: 200,
                 scrollX: true,
-                columnOptions: { resizable: true },
+                columnOptions: { resizable: true },            // 열 너비 드래그
+                draggable: !!opts.rowDraggable,                 // 행 드래그(옵션)
+                copyOptions: { useFormattedValue: false },      // 셀 범위 선택·복사(드래그)
                 pageOptions: { useClient: true, perPage: pageSize },
+                contextMenu: () => [[
+                    { name: 'copy', label: '복사' },
+                    { name: 'copyColumns', label: '열 복사' },
+                    { name: 'copyRows', label: '행 복사' },
+                ], [
+                    { name: 'excel', label: '엑셀 다운로드', action: () => wrap.exportExcel() },
+                    { name: 'refresh', label: '새로고침', action: () => load() },
+                ]],
             });
 
             const wrap = {
@@ -113,6 +125,13 @@
                     const { ok: success, data } = await api(deleteUrl, 'DELETE', { ids: rows.map((r) => r.id) });
                     if (success) { toast(`${data?.deleted ?? rows.length}건이 삭제되었습니다.`, 'ok'); load(); }
                     else toast(data?.message || '삭제에 실패했습니다.', 'crit');
+                },
+                exportExcel() {
+                    try {
+                        grid.export('xlsx', { fileName: (opts.screenName || 'grid') + '-' + new Date().toISOString().slice(0, 10).replace(/-/g, '') });
+                    } catch (e) {
+                        try { grid.export('csv'); } catch (e2) { toast('내보내기를 사용할 수 없습니다.', 'warn'); }
+                    }
                 },
             };
 
@@ -162,6 +181,36 @@
             }
 
             load();
+
+            // ── 열 재정렬(TUI 미지원 → 헤더 HTML5 드래그로 구현) ──
+            function enableColumnReorder() {
+                host.querySelectorAll('.tui-grid-cell-header[data-column-name]').forEach((th) => {
+                    const name = th.getAttribute('data-column-name');
+                    if (!name || name.charAt(0) === '_' || th.__reorder) return;
+                    th.__reorder = true;
+                    th.setAttribute('draggable', 'true');
+                    th.style.cursor = 'grab';
+                    th.addEventListener('dragstart', (e) => { e.dataTransfer.setData('text/col', name); });
+                    th.addEventListener('dragover', (e) => e.preventDefault());
+                    th.addEventListener('drop', (e) => {
+                        e.preventDefault();
+                        const from = e.dataTransfer.getData('text/col');
+                        if (from && from !== name) reorderColumns(from, name);
+                    });
+                });
+            }
+            function reorderColumns(from, to) {
+                const names = tuiCols.map((c) => c.name);
+                const fi = names.indexOf(from);
+                const ti = names.indexOf(to);
+                if (fi < 0 || ti < 0) return;
+                const [moved] = tuiCols.splice(fi, 1);
+                tuiCols.splice(ti, 0, moved);
+                grid.setColumns(tuiCols);
+                setTimeout(enableColumnReorder, 120);
+            }
+            setTimeout(enableColumnReorder, 400);
+
             global.__smartGridRefresh = () => load();
             host.__smartTui = wrap; // 디버깅/테스트용 핸들
             return wrap;
