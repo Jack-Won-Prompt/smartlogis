@@ -51,7 +51,13 @@
             // ── 컬럼 구성 ────────────────────────────────────────
             const tuiCols = columns.map((c) => {
                 const col = { name: c.field, header: c.title, sortable: c.sortable !== false, align: c.align || 'left' };
-                if (c.width) col.width = c.width;
+                // 넓은 컬럼(≥150)은 유연폭(minWidth)으로 그리드 영역을 채우고, 좁은 컬럼은 고정.
+                if (c.width) {
+                    if (c.flex || c.width >= 150) col.minWidth = c.width;
+                    else col.width = c.width;
+                } else {
+                    col.minWidth = 100;
+                }
                 // 편집기
                 if (!readonly && c.editor) {
                     if (c.editor === 'list') {
