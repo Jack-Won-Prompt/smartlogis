@@ -23,7 +23,7 @@
                 {{-- 로고 (전체 워드마크를 흰 카드에 올려 어두운 패널에서도 또렷하게) --}}
                 <a href="{{ url('/') }}" class="inline-flex self-start">
                     <span class="rounded-2xl bg-white px-6 py-4 shadow-lift">
-                        <img src="{{ asset('images/smartlogis_300x100.png') }}" alt="삼에스메디컬 SmartLogis" class="h-8 w-auto object-contain" />
+                        <img src="{{ asset('images/smartlogis_300x100.png') }}" alt="삼에스메디컬 SmartLogis" class="w-auto object-contain" />
                     </span>
                 </a>
 
