@@ -84,14 +84,15 @@
                 refresh() { dt.ajax.reload(null, false); },
                 addBlankRow() {
                     const row = Object.assign({}, defaults, { id: null, _new: true });
-                    const added = dt.row.add(row).draw(false);
+                    const added = dt.row.add(row).draw(false); // 먼저 그려 행/페이지 수 반영
+                    dt.page('last').draw(false);                // 새 행이 있는 마지막 페이지로 이동
                     const node = added.node();
+                    if (!node) return;
                     node.classList.add('dt-new');
-                    // 첫 편집 셀 열기
+                    node.scrollIntoView({ block: 'center' });
                     const firstField = editableFields[0];
                     const td = node.querySelector('.sdt-col-' + firstField);
                     if (td) beginEdit(td, firstField, row, node);
-                    added.scrollTo?.(false);
                 },
                 async deleteSelected() {
                     const ids = [];

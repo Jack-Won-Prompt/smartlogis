@@ -46,6 +46,6 @@
         <script src="https://cdn.datatables.net/2.1.8/js/dataTables.min.js"></script>
         <script src="https://cdn.datatables.net/fixedheader/4.0.1/js/dataTables.fixedHeader.min.js"></script>
         <script src="https://cdn.datatables.net/select/2.1.0/js/dataTables.select.min.js"></script>
-        <script src="{{ asset('js/smartdt.js') }}"></script>
+        <script src="{{ asset('js/smartdt.js') }}?v={{ filemtime(public_path('js/smartdt.js')) }}"></script>
     @endpush
 @endonce
