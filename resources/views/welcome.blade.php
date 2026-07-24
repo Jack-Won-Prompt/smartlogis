@@ -4,6 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="description" content="SmartLogis — 의료 간납 물류 관제 시스템. 공급사부터 병원 선납창고, 사용·정산까지 Lot 단위로 정밀하게.">
+    <link rel="icon" type="image/svg+xml" href="{{ asset('favicon.svg') }}">
     <title>SmartLogis · 의료 간납 물류 관제 시스템</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>

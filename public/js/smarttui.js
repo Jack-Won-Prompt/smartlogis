@@ -126,9 +126,7 @@
                 async deleteSelected() {
                     const rows = grid.getCheckedRows().filter((r) => r.id);
                     if (!rows.length) { toast('선택된 항목이 없습니다.', 'warn'); return; }
-                    const ok = global.confirmDialog
-                        ? await global.confirmDialog({ title: '일괄 삭제', message: `${rows.length}건을 삭제할까요?`, tone: 'crit', confirmText: '삭제' })
-                        : confirm(`${rows.length}건 삭제?`);
+                    const ok = await global.confirmDialog({ title: '일괄 삭제', message: `${rows.length}건을 삭제할까요?`, tone: 'crit', confirmText: '삭제' });
                     if (!ok) return;
                     const { ok: success, data } = await api(deleteUrl, 'DELETE', { ids: rows.map((r) => r.id) });
                     if (success) { toast(`${data?.deleted ?? rows.length}건이 삭제되었습니다.`, 'ok'); load(); }
@@ -175,7 +173,7 @@
                     } else if (t.classList.contains('stui-cancel')) {
                         grid.removeRow(ev.rowKey);
                     } else if (t.classList.contains('stui-del')) {
-                        const ok = global.confirmDialog ? await global.confirmDialog({ title: '삭제', message: '이 항목을 삭제할까요?', tone: 'crit', confirmText: '삭제' }) : confirm('삭제?');
+                        const ok = await global.confirmDialog({ title: '삭제', message: '이 항목을 삭제할까요?', tone: 'crit', confirmText: '삭제' });
                         if (!ok) return;
                         const { ok: success, data } = await api(deleteUrl, 'DELETE', { ids: [row.id] });
                         if (success) { toast('삭제되었습니다.', 'ok'); load(); } else toast(data?.message || '삭제 실패', 'crit');

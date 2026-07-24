@@ -121,7 +121,10 @@
       "Bash(sed -i \"s#'safety_stocks_failures.xlsx'#ExcelFile::failures\\('안전재고'\\)#\" app/Http/Controllers/Master/SafetyStockMasterController.php)",
       "Bash(grep -rhnA35 \"new tui.Grid\\\\|new Grid\\(\" resources/views/main/medical/standard/account_manager_sales_status/index.blade.php)",
       "Bash(cd /e/xampp/htdocs/smartlogis *)",
-      "Bash(./vendor/bin/pint resources *)"
+      "Bash(./vendor/bin/pint resources *)",
+      "Bash(grep -vE \"confirmDialog|data-|//|autocomplete|\\\\.confirm\\\\b\")",
+      "Bash(curl -s -o /dev/null -w '%{http_code}' http://localhost/smartlogis/favicon.svg)",
+      "Bash(echo \"favicon.svg 접근: $\\(curl -s -o /dev/null -w '%{http_code}' http://localhost/smartlogis/favicon.svg\\)\")"
     ],
     "additionalDirectories": [
       "\\tmp",
