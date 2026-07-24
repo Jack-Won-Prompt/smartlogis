@@ -41,9 +41,13 @@
                             <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="{{ $icons[$groupIcon] }}"/></svg>
                             {{ $groupLabel }}
                         </span>
-                        <svg class="h-3.5 w-3.5 transition-transform duration-200" :class="open && 'rotate-90'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg>
+                        <svg class="h-3.5 w-3.5" style="transition:transform .28s cubic-bezier(.4,0,.2,1);{{ $gi === 0 ? 'transform:rotate(90deg)' : '' }}"
+                             :style="{ transform: open ? 'rotate(90deg)' : 'rotate(0deg)' }"
+                             viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg>
                     </button>
-                    <div x-show="open" x-cloak x-transition.origin.top class="space-y-0.5">
+                    <div style="display:grid;transition:grid-template-rows .28s cubic-bezier(.4,0,.2,1);grid-template-rows:{{ $gi === 0 ? '1fr' : '0fr' }}"
+                         :style="{ gridTemplateRows: open ? '1fr' : '0fr' }">
+                    <div class="space-y-0.5" style="overflow:hidden;min-height:0">
                     @foreach($items as [$itemLabel, $routeName, $roles])
                         @if(\Illuminate\Support\Facades\Route::has($routeName))
                             <button type="button" @click="openTab(@js(route($routeName).'?frame=1'), @js($itemLabel)); navOpen=false"
@@ -56,6 +60,7 @@
                             <span class="flex items-center justify-between rounded-lg px-3 py-2 text-sm text-white/30">{{ $itemLabel }}<span class="rounded-full bg-white/5 px-1.5 py-0.5 text-[10px]">준비중</span></span>
                         @endif
                     @endforeach
+                    </div>
                     </div>
                 </div>
             @endforeach

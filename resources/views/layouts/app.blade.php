@@ -48,7 +48,8 @@
                     // 현재 화면이 속한 그룹은 기본으로 펼친다(그 외 첫 그룹만 펼침).
                     $groupActive = collect($items)->contains(fn ($it) => \Illuminate\Support\Facades\Route::has($it[1]) && request()->routeIs($it[1].'*'));
                 @endphp
-                <div x-data="{ open: {{ ($groupActive || $gi === 0) ? 'true' : 'false' }} }">
+                @php $groupOpen = $groupActive || $gi === 0; @endphp
+                <div x-data="{ open: {{ $groupOpen ? 'true' : 'false' }} }">
                     {{-- 대메뉴(그룹) 헤더 — 클릭하면 하위 메뉴 펼침/접힘 --}}
                     <button type="button" @click="open = !open"
                             class="mb-1 flex w-full items-center justify-between rounded-lg px-3 py-2 text-[11px] font-semibold uppercase tracking-wider text-white/40 transition-colors hover:bg-white/5 hover:text-white/75">
@@ -56,9 +57,13 @@
                             <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="{{ $icons[$groupIcon] }}"/></svg>
                             {{ $groupLabel }}
                         </span>
-                        <svg class="h-3.5 w-3.5 transition-transform duration-200" :class="open && 'rotate-90'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg>
+                        <svg class="h-3.5 w-3.5" style="transition:transform .28s cubic-bezier(.4,0,.2,1);{{ $groupOpen ? 'transform:rotate(90deg)' : '' }}"
+                             :style="{ transform: open ? 'rotate(90deg)' : 'rotate(0deg)' }"
+                             viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg>
                     </button>
-                    <div x-show="open" x-cloak x-transition.origin.top class="space-y-0.5">
+                    <div style="display:grid;transition:grid-template-rows .28s cubic-bezier(.4,0,.2,1);grid-template-rows:{{ $groupOpen ? '1fr' : '0fr' }}"
+                         :style="{ gridTemplateRows: open ? '1fr' : '0fr' }">
+                    <div class="space-y-0.5" style="overflow:hidden;min-height:0">
                     @foreach($items as [$itemLabel, $routeName, $roles])
                         @php
                             $exists = \Illuminate\Support\Facades\Route::has($routeName);
@@ -78,6 +83,7 @@
                             </span>
                         @endif
                     @endforeach
+                    </div>
                     </div>
                 </div>
             @endforeach
