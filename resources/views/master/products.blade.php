@@ -63,9 +63,9 @@
         </div>
     </div>
 
-    {{-- 그리드 (withworks DataTables) --}}
+    {{-- 그리드 (mv2 TUI Grid) --}}
     <x-grid-assets />
-    <div class="dt-container mt-1"><table id="product-grid" style="width:100%"></table></div>
+    <div id="product-grid" class="mt-1"></div>
 
     @push('scripts')
     <script>
@@ -74,7 +74,7 @@
             const storageMap = @json($storageTypes);
             const storageTones = { ROOM: 'info', COLD: 'hold', FROZEN: 'hold' };
 
-            const grid = window.SmartDT.create('#product-grid', {
+            const grid = window.SmartTUI.create('#product-grid', {
                 dataUrl: '{{ route('master.products.data') }}',
                 createUrl: '{{ route('master.products.store') }}',
                 updateUrl: (id) => `{{ url('master/products') }}/${id}`,
@@ -87,16 +87,16 @@
                 }),
                 defaults: { product_code: '', product_name: '', supplier_id: '', gtin: '', storage_type: 'ROOM', sales_price: 0, is_active: true },
                 columns: [
-                    { title: '제품코드', field: 'product_code', editor: 'input', render: window.SmartDT.mono },
-                    { title: '제품명', field: 'product_name', editor: 'input' },
-                    { title: '공급사', field: 'supplier_id', editor: 'list', values: supplierMap,
-                      render: (v, row) => supplierMap[v] ?? row.supplier_name ?? '' },
-                    { title: 'GTIN', field: 'gtin', editor: 'input', render: window.SmartDT.mono },
-                    { title: '보관', field: 'storage_type', editor: 'list', values: storageMap,
-                      render: (v) => `<span class="sdt-badge sdt-${storageTones[v]||'hold'}">${storageMap[v]||v}</span>` },
-                    { title: '매출가', field: 'sales_price', editor: 'number', align: 'right', render: window.SmartDT.money },
-                    { title: '사용', field: 'is_active', editor: 'tickCross',
-                      render: (v) => v ? '<span class="sdt-badge sdt-ok">사용</span>' : '<span class="sdt-badge sdt-hold">중지</span>' },
+                    { title: '제품코드', field: 'product_code', editor: 'text', width: 130, html: window.SmartTUI.mono },
+                    { title: '제품명', field: 'product_name', editor: 'text', width: 220 },
+                    { title: '공급사', field: 'supplier_id', editor: 'list', values: supplierMap, width: 170,
+                      html: (v, row) => supplierMap[v] ?? row.supplier_name ?? '' },
+                    { title: 'GTIN', field: 'gtin', editor: 'text', width: 150, html: window.SmartTUI.mono },
+                    { title: '보관', field: 'storage_type', editor: 'list', values: storageMap, width: 110,
+                      html: (v) => `<span class="stui-badge stui-${storageTones[v]||'hold'}">${storageMap[v]||v}</span>` },
+                    { title: '매출가', field: 'sales_price', editor: 'number', align: 'right', width: 130, html: window.SmartTUI.money },
+                    { title: '사용', field: 'is_active', editor: 'checkbox', align: 'center', width: 90,
+                      html: (v) => v ? '<span class="stui-badge stui-ok">사용</span>' : '<span class="stui-badge stui-hold">중지</span>' },
                 ],
             });
 

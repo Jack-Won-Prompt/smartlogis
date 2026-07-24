@@ -118,11 +118,14 @@
       "Bash(sed -i 's#use App\\\\\\\\Support\\\\\\\\ExcelFailReport;#use App\\\\\\\\Support\\\\\\\\ExcelFailReport;\\\\nuse App\\\\\\\\Support\\\\\\\\ExcelFile;#' app/Http/Controllers/Master/SafetyStockMasterController.php)",
       "Bash(sed -i \"s#'safety_stocks_'.now\\(\\)->format\\('Ymd_His'\\).'.xlsx'#ExcelFile::name\\('안전재고'\\)#\" app/Http/Controllers/Master/SafetyStockMasterController.php)",
       "Bash(sed -i \"s#'safety_stocks_template.xlsx'#ExcelFile::template\\('안전재고'\\)#\" app/Http/Controllers/Master/SafetyStockMasterController.php)",
-      "Bash(sed -i \"s#'safety_stocks_failures.xlsx'#ExcelFile::failures\\('안전재고'\\)#\" app/Http/Controllers/Master/SafetyStockMasterController.php)"
+      "Bash(sed -i \"s#'safety_stocks_failures.xlsx'#ExcelFile::failures\\('안전재고'\\)#\" app/Http/Controllers/Master/SafetyStockMasterController.php)",
+      "Bash(grep -rhnA35 \"new tui.Grid\\\\|new Grid\\(\" resources/views/main/medical/standard/account_manager_sales_status/index.blade.php)",
+      "Bash(cd /e/xampp/htdocs/smartlogis *)"
     ],
     "additionalDirectories": [
       "\\tmp",
-      "E:\\xampp\\apache\\conf"
+      "E:\\xampp\\apache\\conf",
+      "e:\\xampp\\htdocs\\fulfillment\\public\\assets\\js\\plugins"
     ]
   }
 }

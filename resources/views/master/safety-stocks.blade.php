@@ -43,7 +43,7 @@
     </div>
 
     <x-grid-assets />
-    <div class="dt-container mt-1"><table id="ss-grid" style="width:100%"></table></div>
+    <div id="ss-grid" class="mt-1"></div>
 
     @push('scripts')
     <script>
@@ -51,9 +51,9 @@
             const hospitalMap = @json($hospitals->pluck('name','id'));
             const productMap = @json($products->mapWithKeys(fn($p)=>[$p->id => $p->product_name.' ('.$p->product_code.')']));
             function f(id){ return document.getElementById(id).value; }
-            const num = (v)=>`<span class="sdt-mono">${Number(v||0).toLocaleString()}</span>`;
+            const num = (v)=>`<span class="stui-mono">${Number(v||0).toLocaleString()}</span>`;
 
-            const grid = window.SmartDT.create('#ss-grid', {
+            const grid = window.SmartTUI.create('#ss-grid', {
                 dataUrl: '{{ route('master.safety-stocks.data') }}',
                 createUrl: '{{ route('master.safety-stocks.store') }}',
                 updateUrl: (id) => `{{ url('master/safety-stocks') }}/${id}`,
@@ -61,11 +61,11 @@
                 params: () => ({ hospital_id:f('f-hospital'), keyword:f('f-keyword') }),
                 defaults: { hospital_id:'', product_id:'', safety_qty:0, max_qty:0, reorder_qty:0 },
                 columns: [
-                    { title:'병원', field:'hospital_id', editor:'list', values:hospitalMap, render:(v,row)=>hospitalMap[v]??row.hospital_name??'' },
-                    { title:'제품', field:'product_id', editor:'list', values:productMap, render:(v,row)=>row.product_name ?? (productMap[v]||'') },
-                    { title:'안전재고', field:'safety_qty', editor:'number', align:'right', render:(v)=>`<span class="sdt-mono" style="font-weight:600">${Number(v||0).toLocaleString()}</span>` },
-                    { title:'최대재고', field:'max_qty', editor:'number', align:'right', render:num },
-                    { title:'보충수량', field:'reorder_qty', editor:'number', align:'right', render:num },
+                    { title:'병원', field:'hospital_id', editor:'list', values:hospitalMap, html:(v,row)=>hospitalMap[v]??row.hospital_name??'' },
+                    { title:'제품', field:'product_id', editor:'list', values:productMap, html:(v,row)=>row.product_name ?? (productMap[v]||'') },
+                    { title:'안전재고', field:'safety_qty', editor:'number', align:'right', html:(v)=>`<span class="stui-mono" style="font-weight:600">${Number(v||0).toLocaleString()}</span>` },
+                    { title:'최대재고', field:'max_qty', editor:'number', align:'right', html:num },
+                    { title:'보충수량', field:'reorder_qty', editor:'number', align:'right', html:num },
                 ],
             });
 

@@ -45,7 +45,7 @@
     </div>
 
     <x-grid-assets />
-    <div class="dt-container mt-1"><table id="user-grid" style="width:100%"></table></div>
+    <div id="user-grid" class="mt-1"></div>
 
     @push('scripts')
     <script>
@@ -56,7 +56,7 @@
             const statusTones = { PENDING:'warn', INVITED:'info', ACTIVE:'ok', SUSPENDED:'hold' };
             function f(id){ return document.getElementById(id).value; }
 
-            const grid = window.SmartDT.create('#user-grid', {
+            const grid = window.SmartTUI.create('#user-grid', {
                 dataUrl: '{{ route('master.users.data') }}',
                 createUrl: '{{ route('master.users.store') }}',
                 updateUrl: (id) => `{{ url('master/users') }}/${id}`,
@@ -64,13 +64,13 @@
                 params: () => ({ keyword:f('f-keyword'), role:f('f-role'), status:f('f-status') }),
                 defaults: { login_id:'', email:'', name:'', role:'HOSPITAL', org_id:'', status:'ACTIVE' },
                 columns: [
-                    { title:'아이디', field:'login_id', editor:'input', render: window.SmartDT.mono },
-                    { title:'이름', field:'name', editor:'input' },
-                    { title:'역할', field:'role', editor:'list', values:roleMap, render:(v)=>roleMap[v]||v },
-                    { title:'소속', field:'org_id', editor:'list', values:orgMap, render:(v,row)=>orgMap[v]??row.org_name??'' },
-                    { title:'이메일', field:'email', editor:'input' },
+                    { title:'아이디', field:'login_id', editor:'text', html: window.SmartTUI.mono },
+                    { title:'이름', field:'name', editor:'text' },
+                    { title:'역할', field:'role', editor:'list', values:roleMap, html:(v)=>roleMap[v]||v },
+                    { title:'소속', field:'org_id', editor:'list', values:orgMap, html:(v,row)=>orgMap[v]??row.org_name??'' },
+                    { title:'이메일', field:'email', editor:'text' },
                     { title:'상태', field:'status', editor:'list', values:statusMap,
-                      render:(v)=>`<span class="sdt-badge sdt-${statusTones[v]||'hold'}">${statusMap[v]||v}</span>` },
+                      html:(v)=>`<span class="stui-badge stui-${statusTones[v]||'hold'}">${statusMap[v]||v}</span>` },
                 ],
             });
 
