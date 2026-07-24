@@ -32,12 +32,18 @@
             <img src="{{ asset('images/smartlogis_300x100_dark_preview.png') }}" alt="SmartLogis" class="w-auto object-contain">
         </div>
         <nav class="flex flex-1 flex-col gap-5 overflow-y-auto px-3 py-5">
-            @foreach($visibleGroups as [$groupLabel, $groupIcon, $items])
-                <div>
-                    <p class="mb-1.5 flex items-center gap-2 px-3 text-[11px] font-semibold uppercase tracking-wider text-white/35">
-                        <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="{{ $icons[$groupIcon] }}"/></svg>
-                        {{ $groupLabel }}
-                    </p>
+            @foreach($visibleGroups as $gi => [$groupLabel, $groupIcon, $items])
+                <div x-data="{ open: {{ $gi === 0 ? 'true' : 'false' }} }">
+                    {{-- 대메뉴(그룹) 헤더 — 클릭하면 하위 메뉴 펼침/접힘 --}}
+                    <button type="button" @click="open = !open"
+                            class="mb-1 flex w-full items-center justify-between rounded-lg px-3 py-2 text-[11px] font-semibold uppercase tracking-wider text-white/40 transition-colors hover:bg-white/5 hover:text-white/75">
+                        <span class="flex items-center gap-2">
+                            <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="{{ $icons[$groupIcon] }}"/></svg>
+                            {{ $groupLabel }}
+                        </span>
+                        <svg class="h-3.5 w-3.5 transition-transform duration-200" :class="open && 'rotate-90'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg>
+                    </button>
+                    <div x-show="open" x-cloak x-transition.origin.top class="space-y-0.5">
                     @foreach($items as [$itemLabel, $routeName, $roles])
                         @if(\Illuminate\Support\Facades\Route::has($routeName))
                             <button type="button" @click="openTab(@js(route($routeName).'?frame=1'), @js($itemLabel)); navOpen=false"
@@ -50,6 +56,7 @@
                             <span class="flex items-center justify-between rounded-lg px-3 py-2 text-sm text-white/30">{{ $itemLabel }}<span class="rounded-full bg-white/5 px-1.5 py-0.5 text-[10px]">준비중</span></span>
                         @endif
                     @endforeach
+                    </div>
                 </div>
             @endforeach
         </nav>

@@ -43,12 +43,22 @@
         </div>
 
         <nav class="flex h-[calc(100vh-3.5rem)] flex-col gap-6 overflow-y-auto px-3 py-5">
-            @foreach($visibleGroups as [$groupLabel, $groupIcon, $items])
-                <div>
-                    <p class="mb-1.5 flex items-center gap-2 px-3 text-[11px] font-semibold uppercase tracking-wider text-white/35">
-                        <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="{{ $icons[$groupIcon] }}"/></svg>
-                        {{ $groupLabel }}
-                    </p>
+            @foreach($visibleGroups as $gi => [$groupLabel, $groupIcon, $items])
+                @php
+                    // 현재 화면이 속한 그룹은 기본으로 펼친다(그 외 첫 그룹만 펼침).
+                    $groupActive = collect($items)->contains(fn ($it) => \Illuminate\Support\Facades\Route::has($it[1]) && request()->routeIs($it[1].'*'));
+                @endphp
+                <div x-data="{ open: {{ ($groupActive || $gi === 0) ? 'true' : 'false' }} }">
+                    {{-- 대메뉴(그룹) 헤더 — 클릭하면 하위 메뉴 펼침/접힘 --}}
+                    <button type="button" @click="open = !open"
+                            class="mb-1 flex w-full items-center justify-between rounded-lg px-3 py-2 text-[11px] font-semibold uppercase tracking-wider text-white/40 transition-colors hover:bg-white/5 hover:text-white/75">
+                        <span class="flex items-center gap-2">
+                            <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="{{ $icons[$groupIcon] }}"/></svg>
+                            {{ $groupLabel }}
+                        </span>
+                        <svg class="h-3.5 w-3.5 transition-transform duration-200" :class="open && 'rotate-90'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg>
+                    </button>
+                    <div x-show="open" x-cloak x-transition.origin.top class="space-y-0.5">
                     @foreach($items as [$itemLabel, $routeName, $roles])
                         @php
                             $exists = \Illuminate\Support\Facades\Route::has($routeName);
@@ -68,6 +78,7 @@
                             </span>
                         @endif
                     @endforeach
+                    </div>
                 </div>
             @endforeach
         </nav>
