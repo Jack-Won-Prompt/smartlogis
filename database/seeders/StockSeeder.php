@@ -48,7 +48,7 @@ class StockSeeder extends Seeder
                 TxType::IN_SUPPLIER,
                 $warehouse->id,
                 $lot,
-                fake()->numberBetween(200, 600),
+                random_int(200, 600),
                 (float) $lot->product->purchase_price,
             );
         }
@@ -60,8 +60,10 @@ class StockSeeder extends Seeder
             // 병원마다 제품의 약 60% 를 취급
             $handled = $products->random((int) ceil($products->count() * 0.6));
 
+            $ratios = [1.6, 1.2, 0.9, 0.5, 0.0];
+
             foreach ($handled as $product) {
-                $safety = fake()->numberBetween(20, 80);
+                $safety = random_int(20, 80);
 
                 SafetyStock::create([
                     'hospital_id' => $hospital->id,
@@ -72,7 +74,7 @@ class StockSeeder extends Seeder
                 ]);
 
                 // 현재고를 안전재고 대비 충분/근접/미달로 분배
-                $ratio = fake()->randomElement([1.6, 1.2, 0.9, 0.5, 0.0]);
+                $ratio = $ratios[array_rand($ratios)];
                 $onHand = (int) round($safety * $ratio);
 
                 if ($onHand <= 0) {

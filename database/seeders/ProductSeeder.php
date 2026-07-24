@@ -63,23 +63,26 @@ class ProductSeeder extends Seeder
 
         $supplierCount = count($suppliers);
 
+        $boxOptions = [1, 5, 10];
+        $nearDays = [18, 25, 45, 80];
+
         foreach (self::CATALOG as $i => [$name, $storage, $sterile]) {
             $supplier = $suppliers[$i % $supplierCount];
-            $purchase = fake()->numberBetween(20_000, 3_000_000);
+            $purchase = random_int(20_000, 3_000_000);
 
             $product = Product::create([
                 'product_code' => sprintf('P-%05d', $i + 1),
                 'product_name' => $name,
-                'udi_di' => fake()->numerify('##############'),
+                'udi_di' => $this->digits(14),
                 'gtin' => sprintf('0880601%07d', $i + 1),   // 14자리 고정
-                'edi_code' => fake()->numerify('########'),
-                'spec' => fake()->bothify('MODEL-###'),
+                'edi_code' => $this->digits(8),
+                'spec' => 'MODEL-'.random_int(100, 999),
                 'manufacturer' => $supplier->name,
                 'supplier_id' => $supplier->id,
                 'unit' => 'EA',
-                'box_qty' => fake()->randomElement([1, 5, 10]),
+                'box_qty' => $boxOptions[array_rand($boxOptions)],
                 'purchase_price' => $purchase,
-                'sales_price' => (int) round($purchase * fake()->randomFloat(2, 1.15, 1.4)),
+                'sales_price' => (int) round($purchase * (random_int(115, 140) / 100)),
                 'storage_type' => $storage,
                 'is_sterile' => $sterile,
                 'use_lot_control' => true,
@@ -88,18 +91,29 @@ class ProductSeeder extends Seeder
             ]);
 
             // Lot 1~2개. 첫 Lot 은 여유, 일부 제품은 임박 Lot 을 하나 더 둔다.
-            $lotCount = fake()->numberBetween(1, 2);
+            $lotCount = random_int(1, 2);
             for ($l = 0; $l < $lotCount; $l++) {
                 $expiry = $l === 0
-                    ? Carbon::today()->addMonths(fake()->numberBetween(8, 36))
-                    : Carbon::today()->addDays(fake()->randomElement([18, 25, 45, 80]));
+                    ? Carbon::today()->addMonths(random_int(8, 36))
+                    : Carbon::today()->addDays($nearDays[array_rand($nearDays)]);
 
                 ProductLot::create([
                     'product_id' => $product->id,
-                    'lot_no' => strtoupper(fake()->bothify('??##K##')),
+                    'lot_no' => sprintf('%s%s%02dK%02d', chr(random_int(65, 90)), chr(random_int(65, 90)), random_int(0, 99), random_int(0, 99)),
                     'expiry_date' => $expiry->format('Y-m-d'),
                 ]);
             }
         }
+    }
+
+    /** faker 미사용 — n자리 임의 숫자 문자열(운영 --no-dev 실행 가능). */
+    private function digits(int $len): string
+    {
+        $s = '';
+        for ($i = 0; $i < $len; $i++) {
+            $s .= random_int(0, 9);
+        }
+
+        return $s;
     }
 }

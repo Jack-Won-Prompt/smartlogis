@@ -39,7 +39,9 @@ class OrganizationSeeder extends Seeder
             ['BUSAN', '부산대학교병원', 'busan'],
         ];
         foreach ($hospitals as [$code, $name, $loginId]) {
-            $org = $this->org(OrgType::HOSPITAL, "HOSP-{$code}", $name, hpid: fake()->numerify('########'));
+            // 요양기관번호: code 기반 결정적 8자리(faker 미사용 — 운영 --no-dev 실행 가능)
+            $hpid = (string) (11000000 + abs(crc32($code)) % 8999999);
+            $org = $this->org(OrgType::HOSPITAL, "HOSP-{$code}", $name, hpid: $hpid);
             $this->user($org, $loginId, "{$name} 담당자");
         }
 
@@ -58,15 +60,18 @@ class OrganizationSeeder extends Seeder
 
     private function org(OrgType $type, string $code, string $name, ?string $hpid = null): Organization
     {
+        // 결정적 값(faker 미사용 — 운영 --no-dev 환경에서도 실행 가능)
+        $d = abs(crc32($code));
+
         return Organization::firstOrCreate(
             ['code' => $code],
             [
                 'org_type' => $type,
                 'name' => $name,
-                'biz_reg_no' => fake()->numerify('###-##-#####'),
+                'biz_reg_no' => sprintf('%03d-%02d-%05d', $d % 1000, $d % 100, $d % 100000),
                 'hpid_no' => $hpid,
-                'address' => fake()->address(),
-                'tel' => fake()->numerify('02-###-####'),
+                'address' => '서울특별시 강남구 테헤란로 123',
+                'tel' => '02-0000-0000',
                 'is_active' => true,
             ]
         );
@@ -82,7 +87,7 @@ class OrganizationSeeder extends Seeder
                 'role' => $org->org_type,
                 'org_id' => $org->id,
                 'status' => UserStatus::ACTIVE,
-                'tel' => fake()->numerify('010-####-####'),
+                'tel' => '010-0000-0000',
                 'password' => Hash::make('password'),
                 'is_active' => true,
                 'approved_at' => now(),
