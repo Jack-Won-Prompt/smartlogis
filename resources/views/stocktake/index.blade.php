@@ -22,6 +22,7 @@
         </button>
     </div>
 
+    <x-grid-assets />
     <div id="st-grid"></div>
 
     {{-- 실사 입력 모달 --}}
@@ -63,17 +64,18 @@
         let stGrid; const CSRF=()=>document.querySelector('meta[name=csrf-token]').content;
         window.addEventListener('DOMContentLoaded', () => {
             const tones={ DRAFT:'hold', COUNTING:'info', CONFIRMED:'ok' };
-            stGrid = window.SmartGrid.create('#st-grid', {
+            stGrid = window.SmartTUI.create('#st-grid', {
                 dataUrl:'{{ route('stocktakes.data') }}', readonly:true,
+                onRowClick:(row)=>window.dispatchEvent(new CustomEvent('st-open',{detail:row.id})),
                 params:()=>({ status:document.getElementById('f-status').value }),
                 columns:[
-                    { title:'실사번호', field:'stocktake_no', width:170, formatter: window.SmartGrid.mono },
+                    { title:'실사번호', field:'stocktake_no', width:170, html: window.SmartTUI.mono },
                     { title:'대상', field:'org_name', minWidth:150 },
-                    { title:'실사일', field:'count_date', width:120, formatter:(c)=>`<span class="sg-mono">${c.getValue()||''}</span>` },
-                    { title:'품목', field:'items_count', width:70, hozAlign:'right', formatter:(c)=>`<span class="sg-mono">${c.getValue()}</span>` },
-                    { title:'상태', field:'status', width:100, formatter:(c)=>`<span class="sg-badge sg-${tones[c.getValue()]||'hold'}">${c.getData().status_label}</span>` },
-                    { title:'', field:'_st', width:90, headerSort:false, hozAlign:'right',
-                      formatter:()=>'<span class="sg-act" style="width:auto;padding:2px 10px;color:#2551c4;font-size:12px;font-weight:600">실사 ▸</span>',
+                    { title:'실사일', field:'count_date', width:120, html:(v,row)=>`<span class="stui-mono">${v||''}</span>` },
+                    { title:'품목', field:'items_count', width:70, align:'right', html:(v,row)=>`<span class="stui-mono">${v}</span>` },
+                    { title:'상태', field:'status', width:100, html:(v,row)=>`<span class="stui-badge stui-${tones[v]||'hold'}">${row.status_label}</span>` },
+                    { title:'', field:'_st', width:90, headerSort:false, align:'right',
+                      html:()=>'<span class="stui-act" style="width:auto;padding:2px 10px;color:#2551c4;font-size:12px;font-weight:600">실사 ▸</span>',
                       cellClick:(e,cell)=>window.dispatchEvent(new CustomEvent('st-open',{detail:cell.getData().id})) },
                 ],
             });

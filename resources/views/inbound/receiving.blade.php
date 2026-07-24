@@ -1,6 +1,7 @@
 <x-app-layout title="입고 검수" breadcrumb="입출고 / 입고 검수">
     <x-page-header title="입고 검수" subtitle="입고 예정 문서를 검수하고 확정하면 창고 재고에 반영됩니다." />
 
+    <x-grid-assets />
     <div id="recv-grid" class="mt-6" x-data></div>
 
     {{-- 검수 모달 --}}
@@ -46,18 +47,19 @@
         let recvGrid;
         window.addEventListener('DOMContentLoaded', () => {
             const statusTones = { PLANNED:'hold', RECEIVING:'info' };
-            recvGrid = window.SmartGrid.create('#recv-grid', {
+            recvGrid = window.SmartTUI.create('#recv-grid', {
                 dataUrl: '{{ route('inbounds.data') }}', readonly:true,
+                onRowClick:(row)=>window.dispatchEvent(new CustomEvent('recv-open',{detail:row.id})),
                 params: () => ({ receivable: 1 }),
                 columns: [
-                    { title:'입고번호', field:'inbound_no', width:170, formatter: window.SmartGrid.mono },
+                    { title:'입고번호', field:'inbound_no', width:170, html: window.SmartTUI.mono },
                     { title:'공급사', field:'from_name', minWidth:140 },
                     { title:'입고창고', field:'to_name', minWidth:140 },
-                    { title:'예정일', field:'planned_date', width:120, formatter:(c)=>`<span class="sg-mono">${c.getValue()||''}</span>` },
-                    { title:'품목', field:'items_count', width:70, hozAlign:'right', formatter:(c)=>`<span class="sg-mono">${c.getValue()}</span>` },
-                    { title:'상태', field:'status', width:100, formatter:(c)=>`<span class="sg-badge sg-${statusTones[c.getValue()]||'hold'}">${c.getData().status_label}</span>` },
-                    { title:'', field:'_recv', width:90, headerSort:false, hozAlign:'right',
-                      formatter:()=>'<span class="sg-act" style="width:auto;padding:2px 10px;color:#2551c4;font-size:12px;font-weight:600">검수 ▸</span>',
+                    { title:'예정일', field:'planned_date', width:120, html:(v,row)=>`<span class="stui-mono">${v||''}</span>` },
+                    { title:'품목', field:'items_count', width:70, align:'right', html:(v,row)=>`<span class="stui-mono">${v}</span>` },
+                    { title:'상태', field:'status', width:100, html:(v,row)=>`<span class="stui-badge stui-${statusTones[v]||'hold'}">${row.status_label}</span>` },
+                    { title:'', field:'_recv', width:90, headerSort:false, align:'right',
+                      html:()=>'<span class="stui-act" style="width:auto;padding:2px 10px;color:#2551c4;font-size:12px;font-weight:600">검수 ▸</span>',
                       cellClick:(e,cell)=>window.dispatchEvent(new CustomEvent('recv-open',{detail:cell.getData().id})) },
                 ],
             });

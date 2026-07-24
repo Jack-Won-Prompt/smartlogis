@@ -17,6 +17,7 @@
         </div>
     </x-filter-bar>
 
+    <x-grid-assets />
     <div id="ap-grid" class="mt-4"></div>
 
     {{-- 승인/반려 모달 --}}
@@ -74,18 +75,19 @@
         window.addEventListener('DOMContentLoaded', () => {
             const tones={ DRAFT:'hold', SUBMITTED:'info', APPROVED:'ok', REJECTED:'crit' };
             function f(id){ return document.getElementById(id).value; }
-            apGrid = window.SmartGrid.create('#ap-grid', {
+            apGrid = window.SmartTUI.create('#ap-grid', {
                 dataUrl:'{{ route('usages.data') }}', readonly:true,
+                onRowClick:(row)=>window.dispatchEvent(new CustomEvent('ap-open',{detail:row.id})),
                 params:()=>({ keyword:f('f-keyword'), status:f('f-status') }),
                 columns:[
-                    { title:'사용분번호', field:'report_no', width:200, formatter: window.SmartGrid.mono },
+                    { title:'사용분번호', field:'report_no', width:200, html: window.SmartTUI.mono },
                     { title:'병원', field:'hospital_name', minWidth:140 },
-                    { title:'사용일', field:'usage_date', width:120, formatter:(c)=>`<span class="sg-mono">${c.getValue()}</span>` },
-                    { title:'품목', field:'items_count', width:70, hozAlign:'right', formatter:(c)=>`<span class="sg-mono">${c.getValue()}</span>` },
-                    { title:'금액', field:'total_amount', width:130, hozAlign:'right', formatter: window.SmartGrid.money },
-                    { title:'상태', field:'status', width:110, formatter:(c)=>`<span class="sg-badge sg-${tones[c.getValue()]||'hold'}">${c.getData().status_label}</span>` },
-                    { title:'', field:'_a', width:80, headerSort:false, hozAlign:'right',
-                      formatter:(c)=>c.getData().status==='SUBMITTED'?'<span class="sg-act" style="width:auto;padding:2px 10px;color:#2551c4;font-size:12px;font-weight:600">검토 ▸</span>':'<span style="color:#93a4b6;font-size:12px">보기</span>',
+                    { title:'사용일', field:'usage_date', width:120, html:(v,row)=>`<span class="stui-mono">${v}</span>` },
+                    { title:'품목', field:'items_count', width:70, align:'right', html:(v,row)=>`<span class="stui-mono">${v}</span>` },
+                    { title:'금액', field:'total_amount', width:130, align:'right', html: window.SmartTUI.money },
+                    { title:'상태', field:'status', width:110, html:(v,row)=>`<span class="stui-badge stui-${tones[v]||'hold'}">${row.status_label}</span>` },
+                    { title:'', field:'_a', width:80, headerSort:false, align:'right',
+                      html:(v,row)=>row.status==='SUBMITTED'?'<span class="stui-act" style="width:auto;padding:2px 10px;color:#2551c4;font-size:12px;font-weight:600">검토 ▸</span>':'<span style="color:#93a4b6;font-size:12px">보기</span>',
                       cellClick:(e,cell)=>window.dispatchEvent(new CustomEvent('ap-open',{detail:cell.getData().id})) },
                 ],
             });

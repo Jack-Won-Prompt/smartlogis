@@ -120,7 +120,8 @@
       "Bash(sed -i \"s#'safety_stocks_template.xlsx'#ExcelFile::template\\('안전재고'\\)#\" app/Http/Controllers/Master/SafetyStockMasterController.php)",
       "Bash(sed -i \"s#'safety_stocks_failures.xlsx'#ExcelFile::failures\\('안전재고'\\)#\" app/Http/Controllers/Master/SafetyStockMasterController.php)",
       "Bash(grep -rhnA35 \"new tui.Grid\\\\|new Grid\\(\" resources/views/main/medical/standard/account_manager_sales_status/index.blade.php)",
-      "Bash(cd /e/xampp/htdocs/smartlogis *)"
+      "Bash(cd /e/xampp/htdocs/smartlogis *)",
+      "Bash(./vendor/bin/pint resources *)"
     ],
     "additionalDirectories": [
       "\\tmp",
