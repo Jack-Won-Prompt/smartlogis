@@ -15,6 +15,8 @@ use Illuminate\Support\Facades\Hash;
  * 조직 4종과 대표 로그인 계정을 생성한다. 모든 계정 비밀번호는 "password".
  *
  * 로그인 ID 규칙: hq / wh1 / seoul(병원 코드) / sup-samsung(공급사)
+ * 멱등(idempotent): 조직은 code, 사용자는 email 기준 upsert 라 여러 번 실행해도 중복이 없고,
+ * 재실행 시 테스트 계정 비밀번호를 "password" 로 재설정한다(운영 테스트 시드용).
  */
 class OrganizationSeeder extends Seeder
 {
@@ -56,31 +58,35 @@ class OrganizationSeeder extends Seeder
 
     private function org(OrgType $type, string $code, string $name, ?string $hpid = null): Organization
     {
-        return Organization::create([
-            'org_type' => $type,
-            'code' => $code,
-            'name' => $name,
-            'biz_reg_no' => fake()->numerify('###-##-#####'),
-            'hpid_no' => $hpid,
-            'address' => fake()->address(),
-            'tel' => fake()->numerify('02-###-####'),
-            'is_active' => true,
-        ]);
+        return Organization::firstOrCreate(
+            ['code' => $code],
+            [
+                'org_type' => $type,
+                'name' => $name,
+                'biz_reg_no' => fake()->numerify('###-##-#####'),
+                'hpid_no' => $hpid,
+                'address' => fake()->address(),
+                'tel' => fake()->numerify('02-###-####'),
+                'is_active' => true,
+            ]
+        );
     }
 
     private function user(Organization $org, string $loginId, string $name): User
     {
-        return User::create([
-            'login_id' => $loginId,
-            'email' => $loginId.'@smartlogis.test',
-            'name' => $name,
-            'role' => $org->org_type,
-            'org_id' => $org->id,
-            'status' => UserStatus::ACTIVE,
-            'tel' => fake()->numerify('010-####-####'),
-            'password' => Hash::make('password'),
-            'is_active' => true,
-            'approved_at' => now(),
-        ]);
+        return User::updateOrCreate(
+            ['email' => $loginId.'@smartlogis.test'],
+            [
+                'login_id' => $loginId,
+                'name' => $name,
+                'role' => $org->org_type,
+                'org_id' => $org->id,
+                'status' => UserStatus::ACTIVE,
+                'tel' => fake()->numerify('010-####-####'),
+                'password' => Hash::make('password'),
+                'is_active' => true,
+                'approved_at' => now(),
+            ]
+        );
     }
 }
