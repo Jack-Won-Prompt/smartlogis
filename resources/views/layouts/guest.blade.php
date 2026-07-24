@@ -6,7 +6,7 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <link rel="icon" type="image/svg+xml" href="{{ asset('favicon.svg') }}">
 
-    <title>{{ $title ?? '' }}{{ isset($title) ? ' · ' : '' }}{{ config('app.name', 'SmartLogis') }}</title>
+    <title>{{ $title ? $title.' · ' : '' }}SmartLogis</title>
 
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
