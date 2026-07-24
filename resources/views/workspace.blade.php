@@ -102,7 +102,7 @@
         </div>
 
         {{-- iframe 컨테이너(탭별 iframe 유지 → 상태 보존) --}}
-        <div class="relative min-h-0 flex-1 bg-surface-0">
+        <div class="relative min-h-0 flex-1 bg-white">
             <template x-for="t in tabs" :key="t.id">
                 <iframe :src="t.url" x-show="active===t.id" loading="lazy"
                         class="absolute inset-0 h-full w-full border-0"></iframe>

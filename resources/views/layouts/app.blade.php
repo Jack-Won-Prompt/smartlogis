@@ -30,7 +30,7 @@
     @livewireStyles
     @stack('head')
 </head>
-<body class="{{ $frame ? 'bg-white' : 'bg-surface-0' }} font-sans text-ink-700 antialiased" x-data="{ mobileNav: false }">
+<body class="{{ $frame ? 'min-h-screen bg-white' : 'bg-surface-0' }} font-sans text-ink-700 antialiased" x-data="{ mobileNav: false }">
 
     @unless($frame)
     {{-- ── 사이드바 (232px, 고정 네이비) ─────────────────────────── --}}
