@@ -12,6 +12,22 @@
             .tui-grid-cell { border-color: #f0f3f6 !important; color: #3b4855; font-size: 13.5px; }
             .tui-grid-row-odd .tui-grid-cell, .tui-grid-row-even .tui-grid-cell { background: #fff; }
             .tui-grid-cell-current-row { background: #f7f9fb !important; }
+            /* ── 틀 정리: 잡선·스크롤박스 제거, 하이라인 통일 ── */
+            .tui-grid-border-line-top, .tui-grid-border-line-bottom,
+            .tui-grid-border-line-left, .tui-grid-border-line-right {
+                background: #e8edf1 !important; border-color: #e8edf1 !important;
+            }
+            .tui-grid-scrollbar-right-top, .tui-grid-scrollbar-right-bottom,
+            .tui-grid-scrollbar-left-bottom, .tui-grid-scrollbar-frozen-border {
+                background: #fff !important; border-color: transparent !important;
+            }
+            .tui-grid-scrollbar-y-inner-border, .tui-grid-scrollbar-x-inner-border,
+            .tui-grid-scrollbar-frozen-border { background: transparent !important; }
+            .tui-grid-frozen-border { background: #eef2f5 !important; border: 0 !important; }
+            /* 세로 스크롤바 트랙을 은은하게 */
+            .tui-grid-rside-area .tui-grid-scrollbar-y { background: #fff; }
+            /* 헤더 정렬 아이콘 여백 살짝 */
+            .tui-grid-cell-header .tui-grid-btn-sorting { opacity: .55; }
             .stui-cell { display: flex; align-items: center; height: 100%; }
             .stui-mono { font-family: 'IBM Plex Mono', monospace; font-variant-numeric: tabular-nums; color: #101b26; }
             .stui-badge { display: inline-flex; align-items: center; gap: 5px; padding: 2px 9px; border-radius: 999px; font-size: 12px; font-weight: 500; }
