@@ -45,6 +45,23 @@ it('새 안전재고를 등록하고 max/reorder 기본값을 산출한다', fun
         ->and($row->reorder_qty)->toBe(40); // safety * 2
 });
 
+it('그리드 신규행(max/reorder=0)도 안전재고 기준으로 자동 산출한다', function () {
+    actingAsRole(OrgType::HQ);
+    $hospital = Organization::factory()->hospital()->create();
+    $product = Product::factory()->create();
+
+    // 그리드 addBlankRow 는 max_qty/reorder_qty 를 0 으로 전송한다.
+    $this->postJson('/master/safety-stocks', [
+        'hospital_id' => $hospital->id, 'product_id' => $product->id,
+        'safety_qty' => 25, 'max_qty' => 0, 'reorder_qty' => 0,
+    ])->assertOk();
+
+    $row = SafetyStock::where('hospital_id', $hospital->id)->where('product_id', $product->id)->first();
+    expect($row->safety_qty)->toBe(25)
+        ->and($row->max_qty)->toBe(75)      // 0 이 아니라 safety*3 로 산출
+        ->and($row->reorder_qty)->toBe(50); // safety*2
+});
+
 it('병원이 아닌 조직을 대상으로 하면 422', function () {
     actingAsRole(OrgType::HQ);
     $supplier = Organization::factory()->supplier()->create();

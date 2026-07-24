@@ -55,12 +55,13 @@ class SafetyStockMasterController extends Controller
         ], [], ['hospital_id' => '병원', 'product_id' => '제품', 'safety_qty' => '안전재고'])->validate();
 
         $safety = (int) $validated['safety_qty'];
+        // 그리드 신규행은 max/reorder 를 0 으로 보내므로(null 아님) 0·빈값은 자동 산출로 처리한다.
         DB::table('safety_stocks')->updateOrInsert(
             ['hospital_id' => $validated['hospital_id'], 'product_id' => $validated['product_id']],
             [
                 'safety_qty' => $safety,
-                'max_qty' => (int) ($validated['max_qty'] ?? $safety * 3),
-                'reorder_qty' => (int) ($validated['reorder_qty'] ?? $safety * 2),
+                'max_qty' => (int) (($validated['max_qty'] ?? 0) ?: $safety * 3),
+                'reorder_qty' => (int) (($validated['reorder_qty'] ?? 0) ?: $safety * 2),
                 'updated_at' => now(), 'created_at' => now(),
             ]
         );

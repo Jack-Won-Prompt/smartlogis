@@ -97,7 +97,13 @@
       "Bash(git commit -q -m '@ *)",
       "Bash(git commit *)",
       "Bash(xargs echo \"라우트 수:\")",
-      "Bash(./vendor/bin/pint --test app routes tests)"
+      "Bash(./vendor/bin/pint --test app routes tests)",
+      "Bash(./vendor/bin/pest tests/Feature/Master --compact)",
+      "Bash(./vendor/bin/pint tests/Feature/Master)",
+      "mcp__playwright__browser_snapshot",
+      "mcp__playwright__browser_press_key",
+      "Bash(./vendor/bin/pest tests/Feature/Master/SafetyStockMasterTest.php --compact)",
+      "Bash(./vendor/bin/pint app/Http/Controllers/Master/SafetyStockMasterController.php tests/Feature/Master)"
     ],
     "additionalDirectories": [
       "\\tmp",
