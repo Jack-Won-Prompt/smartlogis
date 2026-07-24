@@ -24,7 +24,7 @@ it('로그인 ID와 비밀번호로 인증된다', function () {
     $this->post('/login', [
         'login_id' => 'hq',
         'password' => 'secret123',
-    ])->assertRedirect(route('dashboard'));
+    ])->assertRedirect(route('workspace'));
 
     $this->assertAuthenticatedAs($user);
 });

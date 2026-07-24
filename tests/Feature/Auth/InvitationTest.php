@@ -52,7 +52,7 @@ it('초대 수락 시 최초 비밀번호로 ACTIVE 계정이 생성된다', fun
 
     // 설정한 비밀번호로 로그인 가능
     $this->post('/login', ['login_id' => 'doc1', 'password' => 'password123'])
-        ->assertRedirect(route('dashboard'));
+        ->assertRedirect(route('workspace'));
 });
 
 it('이미 수락된 초대는 재사용할 수 없다', function () {

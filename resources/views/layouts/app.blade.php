@@ -4,59 +4,12 @@
     $me = auth()->user();
     $role = $me->role;
 
-    // 메뉴 정의: [그룹, 아이콘, [ [라벨, 라우트명, 허용역할[]], ... ]]
-    $menu = [
-        ['대시보드', 'grid', [
-            ['대시보드', 'dashboard', []],
-        ]],
-        ['기준정보', 'layers', [
-            ['제품 마스터', 'master.products', [OrgType::HQ]],
-            ['거래처', 'master.organizations', [OrgType::HQ]],
-            ['사용자', 'master.users', [OrgType::HQ]],
-            ['안전재고', 'master.safety-stocks', [OrgType::HQ]],
-        ]],
-        ['재고', 'box', [
-            ['재고 현황', 'inventory.status', [OrgType::HQ, OrgType::WAREHOUSE, OrgType::HOSPITAL]],
-            ['유통기한 임박', 'inventory.expiry', [OrgType::HQ, OrgType::WAREHOUSE, OrgType::HOSPITAL]],
-            ['재고 실사', 'stocktakes.index', [OrgType::HQ, OrgType::WAREHOUSE, OrgType::HOSPITAL]],
-            ['Lot 추적', 'inventory.lot-trace', [OrgType::HQ, OrgType::WAREHOUSE, OrgType::HOSPITAL]],
-        ]],
-        ['입출고', 'truck', [
-            ['입고 예정(ASN)', 'inbounds.asn', [OrgType::HQ, OrgType::WAREHOUSE, OrgType::SUPPLIER]],
-            ['입고 검수', 'inbounds.receiving', [OrgType::HQ, OrgType::WAREHOUSE]],
-            ['출고 지시', 'outbounds.index', [OrgType::HQ, OrgType::WAREHOUSE]],
-            ['피킹/출고', 'outbounds.picking', [OrgType::HQ, OrgType::WAREHOUSE]],
-            ['배송 현황', 'outbounds.delivery', [OrgType::HQ, OrgType::WAREHOUSE, OrgType::HOSPITAL]],
-        ]],
-        ['사용분', 'clipboard', [
-            ['사용분 등록', 'usages.create', [OrgType::HOSPITAL]],
-            ['사용분 승인', 'usages.approval', [OrgType::HQ]],
-            ['사용분 이력', 'usages.index', [OrgType::HQ, OrgType::HOSPITAL]],
-        ]],
-        ['정산', 'won', [
-            ['월 정산', 'settlements.index', [OrgType::HQ, OrgType::HOSPITAL, OrgType::SUPPLIER]],
-            ['월 마감', 'settlements.closing', [OrgType::HQ]],
-        ]],
-        ['공급사', 'factory', [
-            ['자사 재고', 'supplier.stocks', [OrgType::SUPPLIER, OrgType::HQ]],
-            ['부족/납품', 'supplier.shortages', [OrgType::SUPPLIER, OrgType::HQ]],
-        ]],
-        ['관리', 'shield', [
-            ['알림 센터', 'notifications.index', []],
-            ['감사 로그', 'admin.audit-logs', [OrgType::HQ]],
-        ]],
-    ];
+    // MDI 워크스페이스 iframe 안에서는 사이드바/상단바 없이 콘텐츠만 렌더한다.
+    $frame = request()->boolean('frame');
 
-    $icons = [
-        'grid' => 'M3 3h7v7H3zM14 3h7v7h-7zM14 14h7v7h-7zM3 14h7v7H3z',
-        'layers' => 'm12 2 9 5-9 5-9-5 9-5ZM3 12l9 5 9-5M3 17l9 5 9-5',
-        'box' => 'm12 3 8 4.5v9L12 21l-8-4.5v-9L12 3ZM12 12 4 7.5M12 12l8-4.5M12 12v9',
-        'truck' => 'M1 3h15v13H1zM16 8h4l3 3v5h-7M5.5 19a2 2 0 1 0 0-4 2 2 0 0 0 0 4ZM18.5 19a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z',
-        'clipboard' => 'M9 4h6v3H9zM7 4H5v17h14V4h-2M9 12h6M9 16h4',
-        'won' => 'M4 6l3 12 3-9 2 6 2-6 3 9 3-12M3 10h18',
-        'factory' => 'M3 21V9l5 3V9l5 3V9l5 3v9H3ZM7 21v-3M12 21v-3M17 21v-3',
-        'shield' => 'M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6l8-3Z',
-    ];
+    // 메뉴 정의는 config/menu.php 로 공유(워크스페이스 셸과 동일 소스).
+    $menu = config('menu.groups');
+    $icons = config('menu.icons');
 
     $visibleGroups = collect($menu)->map(function ($group) use ($role) {
         [$label, $icon, $items] = $group;
@@ -79,6 +32,7 @@
 </head>
 <body class="bg-surface-0 font-sans text-ink-700 antialiased" x-data="{ mobileNav: false }">
 
+    @unless($frame)
     {{-- ── 사이드바 (232px, 고정 네이비) ─────────────────────────── --}}
     <aside class="fixed inset-y-0 left-0 z-40 w-[232px] -translate-x-full bg-navy transition-transform duration-300 ease-brand lg:translate-x-0"
            :class="mobileNav && '!translate-x-0'">
@@ -120,9 +74,11 @@
 
     {{-- 모바일 오버레이 --}}
     <div x-show="mobileNav" x-cloak @click="mobileNav = false" class="fixed inset-0 z-30 bg-navy/50 backdrop-blur-sm lg:hidden"></div>
+    @endunless
 
     {{-- ── 메인 영역 ─────────────────────────────────────────────── --}}
-    <div class="lg:pl-[232px]">
+    <div class="{{ $frame ? '' : 'lg:pl-[232px]' }}">
+        @unless($frame)
         {{-- 상단바 56px --}}
         <header class="sticky top-0 z-20 flex h-14 items-center justify-between gap-4 border-b border-line bg-surface-1/80 px-4 backdrop-blur-xl sm:px-6">
             <div class="flex items-center gap-3">
@@ -177,9 +133,10 @@
                 </div>
             </div>
         </header>
+        @endunless
 
         {{-- 콘텐츠 --}}
-        <main class="p-6">
+        <main class="{{ $frame ? 'p-5' : 'p-6' }}">
             {{ $slot }}
         </main>
     </div>

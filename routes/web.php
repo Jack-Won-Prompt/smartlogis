@@ -33,13 +33,16 @@ use Illuminate\Support\Facades\Route;
 */
 
 Route::get('/', function () {
-    // 로그인 사용자는 대시보드로, 방문자는 랜딩 페이지로.
+    // 로그인 사용자는 MDI 워크스페이스로, 방문자는 랜딩 페이지로.
     return auth()->check()
-        ? redirect()->route('dashboard')
+        ? redirect()->route('workspace')
         : view('welcome');
 })->name('welcome');
 
 Route::middleware('auth')->group(function () {
+    // MDI 탭 워크스페이스(셸) — 메뉴 클릭 시 화면이 탭(iframe)으로 열린다.
+    Route::view('/workspace', 'workspace')->name('workspace');
+
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
 
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
