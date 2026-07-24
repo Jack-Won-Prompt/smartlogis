@@ -27,6 +27,7 @@
         </x-slot:actions>
     </x-filter-bar>
 
+    <x-grid-assets />
     <div id="stock-grid" class="mt-4"></div>
 
     @push('scripts')
@@ -36,17 +37,17 @@
             function f(id){ const el=document.getElementById(id); return el?el.value:''; }
             const filters = () => ({ org_id: f('f-org'), keyword: f('f-keyword') });
 
-            const grid = window.SmartGrid.create('#stock-grid', {
+            const grid = window.SmartTUI.create('#stock-grid', {
                 dataUrl: '{{ route('inventory.status.data') }}',
                 readonly: true,
                 params: filters,
                 columns: [
                     { title:'위치', field:'org_name', minWidth:140 },
-                    { title:'제품코드', field:'product_code', width:120, formatter: window.SmartGrid.mono },
+                    { title:'제품코드', field:'product_code', width:120, html: window.SmartTUI.mono },
                     { title:'제품명', field:'product_name', minWidth:180 },
-                    { title:'Lot', field:'lot_no', width:120, formatter:(c)=>`<span class="sg-mono">${c.getValue()}</span>` },
-                    { title:'유통기한', field:'expiry_date', width:150, formatter: expiryChip },
-                    { title:'현재고', field:'qty', hozAlign:'right', width:150, formatter: stockGauge },
+                    { title:'Lot', field:'lot_no', width:120, html:(v,row)=>`<span class="stui-mono">${v}</span>` },
+                    { title:'유통기한', field:'expiry_date', width:150, html: expiryChip },
+                    { title:'현재고', field:'qty', align:'right', width:150, html: stockGauge },
                 ],
             });
 
@@ -56,18 +57,16 @@
         });
 
         // 유통기한 칩(D-day 색상)
-        function expiryChip(cell){
-            const d = cell.getValue();
-            if(!d) return '<span class="sg-mono" style="color:#93a4b6">—</span>';
-            const days = cell.getData().expiry_days;
+        function expiryChip(d, row){
+            if(!d) return '<span class="stui-mono" style="color:#93a4b6">—</span>';
+            const days = row.expiry_days;
             const tone = days < 30 ? 'crit' : (days < 90 ? 'warn' : 'ok');
             const dtxt = days < 0 ? `D+${Math.abs(days)}` : `D-${days}`;
-            return `<span class="sg-badge sg-${tone}" style="font-family:'IBM Plex Mono'">${d} · ${dtxt}</span>`;
+            return `<span class="stui-badge stui-${tone}" style="font-family:'IBM Plex Mono'">${d} · ${dtxt}</span>`;
         }
         // 재고수준 게이지(안전재고 대비)
-        function stockGauge(cell){
-            const qty = cell.getValue();
-            const safety = cell.getData().safety_qty || 0;
+        function stockGauge(qty, row){
+            const safety = row.safety_qty || 0;
             const ratio = safety > 0 ? qty/safety : 1.5;
             const tone = ratio < 1 ? 'crit' : (ratio < 1.2 ? 'warn' : 'ok');
             const color = {crit:'#c2362b',warn:'#b4700a',ok:'#1e8a5b'}[tone];

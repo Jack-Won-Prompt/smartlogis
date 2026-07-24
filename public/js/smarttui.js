@@ -37,6 +37,8 @@
     const SmartTUI = {
         mono: (v) => `<span class="stui-mono">${v ?? ''}</span>`,
         money: (v) => `<span class="stui-mono" style="font-weight:600">₩${Number(v || 0).toLocaleString('ko-KR')}</span>`,
+        // 상태 뱃지: map = { VALUE: {label, tone}, _labelKey? }. row[_labelKey] 로 라벨 대체 가능.
+        badge: (map) => (v, row) => { const c = map[v] || { label: (map._labelKey && row) ? row[map._labelKey] : v, tone: 'hold' }; return `<span class="stui-badge stui-${c.tone}">${c.label ?? v}</span>`; },
 
         create(selector, opts) {
             const {

@@ -32,6 +32,7 @@
         </div>
     </x-filter-bar>
 
+    <x-grid-assets />
     <div id="expiry-grid" class="mt-4"></div>
 
     @push('scripts')
@@ -41,17 +42,17 @@
             function f(id){ const el=document.getElementById(id); return el?el.value:''; }
             const filters = () => ({ within, org_id: f('f-org'), keyword: f('f-keyword') });
 
-            const grid = window.SmartGrid.create('#expiry-grid', {
+            const grid = window.SmartTUI.create('#expiry-grid', {
                 dataUrl: '{{ route('inventory.expiry.data') }}',
                 readonly: true,
                 params: filters,
                 columns: [
                     { title:'위치', field:'org_name', minWidth:140 },
-                    { title:'제품코드', field:'product_code', width:120, formatter: window.SmartGrid.mono },
+                    { title:'제품코드', field:'product_code', width:120, html: window.SmartTUI.mono },
                     { title:'제품명', field:'product_name', minWidth:180 },
-                    { title:'Lot', field:'lot_no', width:120, formatter:(c)=>`<span class="sg-mono">${c.getValue()}</span>` },
-                    { title:'유통기한', field:'expiry_date', width:160, formatter: expiryChip },
-                    { title:'현재고', field:'qty', hozAlign:'right', width:110, formatter:(c)=>`<span class="sg-mono">${Number(c.getValue()).toLocaleString()}</span>` },
+                    { title:'Lot', field:'lot_no', width:120, html:(v,row)=>`<span class="stui-mono">${v}</span>` },
+                    { title:'유통기한', field:'expiry_date', width:160, html: expiryChip },
+                    { title:'현재고', field:'qty', align:'right', width:110, html:(v,row)=>`<span class="stui-mono">${Number(v).toLocaleString()}</span>` },
                 ],
             });
 
@@ -66,11 +67,11 @@
             const org=document.getElementById('f-org'); if(org) org.addEventListener('change',()=>grid.refresh());
         });
 
-        function expiryChip(cell){
-            const d = cell.getValue(); const days = cell.getData().expiry_days;
+        function expiryChip(d, row){
+            const days = row.expiry_days;
             const tone = days < 30 ? 'crit' : (days < 90 ? 'warn' : 'ok');
             const dtxt = days < 0 ? `D+${Math.abs(days)} 경과` : `D-${days}`;
-            return `<span class="sg-badge sg-${tone}" style="font-family:'IBM Plex Mono'">${d} · ${dtxt}</span>`;
+            return `<span class="stui-badge stui-${tone}" style="font-family:'IBM Plex Mono'">${d} · ${dtxt}</span>`;
         }
     </script>
     @endpush

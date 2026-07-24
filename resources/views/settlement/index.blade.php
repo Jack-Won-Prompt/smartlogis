@@ -16,6 +16,7 @@
         </div>
     </x-filter-bar>
 
+    <x-grid-assets />
     <div id="st-grid" class="mt-4"></div>
 
     @push('scripts')
@@ -24,16 +25,16 @@
             const tones={ OPEN:'info', CONFIRMED:'ok', CLOSED:'hold' };
             const typeTones={ SALES:'ok', PURCHASE:'warn' };
             function f(id){ return document.getElementById(id).value.replace('-','-'); }
-            const grid = window.SmartGrid.create('#st-grid', {
+            const grid = window.SmartTUI.create('#st-grid', {
                 dataUrl:'{{ route('settlements.data') }}', readonly:true,
                 params:()=>({ year_month:document.getElementById('f-ym').value, settle_type:document.getElementById('f-type').value }),
                 columns:[
-                    { title:'정산월', field:'year_month', width:110, formatter: window.SmartGrid.mono },
-                    { title:'유형', field:'settle_type', width:90, formatter:(c)=>`<span class="sg-badge sg-${typeTones[c.getValue()]||'hold'}">${c.getData().settle_label}</span>` },
+                    { title:'정산월', field:'year_month', width:110, html: window.SmartTUI.mono },
+                    { title:'유형', field:'settle_type', width:90, html:(v,row)=>`<span class="stui-badge stui-${typeTones[v]||'hold'}">${row.settle_label}</span>` },
                     { title:'거래처', field:'org_name', minWidth:160 },
-                    { title:'수량', field:'total_qty', width:100, hozAlign:'right', formatter:(c)=>`<span class="sg-mono">${Number(c.getValue()).toLocaleString()}</span>` },
-                    { title:'금액', field:'total_amount', width:160, hozAlign:'right', formatter: window.SmartGrid.money },
-                    { title:'상태', field:'status', width:100, formatter:(c)=>`<span class="sg-badge sg-${tones[c.getValue()]||'hold'}">${c.getData().status_label}</span>` },
+                    { title:'수량', field:'total_qty', width:100, align:'right', html:(v,row)=>`<span class="stui-mono">${Number(v).toLocaleString()}</span>` },
+                    { title:'금액', field:'total_amount', width:160, align:'right', html: window.SmartTUI.money },
+                    { title:'상태', field:'status', width:100, html:(v,row)=>`<span class="stui-badge stui-${tones[v]||'hold'}">${row.status_label}</span>` },
                 ],
             });
             ['f-ym','f-type'].forEach(id=>document.getElementById(id).addEventListener('change',()=>grid.refresh()));

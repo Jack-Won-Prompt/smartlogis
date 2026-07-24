@@ -8,21 +8,22 @@
         </div>
     </x-filter-bar>
 
+    <x-grid-assets />
     <div id="sup-grid" class="mt-4"></div>
 
     @push('scripts')
     <script>
         window.addEventListener('DOMContentLoaded', () => {
-            const grid = window.SmartGrid.create('#sup-grid', {
+            const grid = window.SmartTUI.create('#sup-grid', {
                 dataUrl:'{{ route('supplier.stocks.data') }}', readonly:true,
                 params:()=>({ keyword:document.getElementById('f-keyword').value }),
                 columns:[
                     { title:'병원', field:'hospital_name', minWidth:150 },
-                    { title:'제품코드', field:'product_code', width:120, formatter: window.SmartGrid.mono },
+                    { title:'제품코드', field:'product_code', width:120, html: window.SmartTUI.mono },
                     { title:'제품명', field:'product_name', minWidth:180 },
-                    { title:'Lot', field:'lot_no', width:120, formatter:(c)=>`<span class="sg-mono">${c.getValue()}</span>` },
-                    { title:'유통기한', field:'expiry_date', width:130, formatter:(c)=>`<span class="sg-mono">${c.getValue()||'—'}</span>` },
-                    { title:'현재고', field:'qty', width:110, hozAlign:'right', formatter:(c)=>`<span class="sg-mono" style="font-weight:600">${Number(c.getValue()).toLocaleString()}</span>` },
+                    { title:'Lot', field:'lot_no', width:120, html:(v,row)=>`<span class="stui-mono">${v}</span>` },
+                    { title:'유통기한', field:'expiry_date', width:130, html:(v,row)=>`<span class="stui-mono">${v||'—'}</span>` },
+                    { title:'현재고', field:'qty', width:110, align:'right', html:(v,row)=>`<span class="stui-mono" style="font-weight:600">${Number(v).toLocaleString()}</span>` },
                 ],
             });
             let t; document.getElementById('f-keyword').addEventListener('input',()=>{clearTimeout(t);t=setTimeout(()=>grid.refresh(),350);});
