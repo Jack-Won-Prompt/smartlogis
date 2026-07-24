@@ -11,6 +11,7 @@ use App\Http\Controllers\Controller;
 use App\Imports\ProductsImport;
 use App\Models\Product;
 use App\Support\ExcelFailReport;
+use App\Support\ExcelFile;
 use App\Validation\ProductRules;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -104,14 +105,14 @@ class ProductMasterController extends Controller
             'is_active' => $request->has('is_active') ? $request->string('is_active')->toString() : '',
         ])->orderBy('product_code');
 
-        return Excel::download(new ProductsExport($query), 'products_'.now()->format('Ymd_His').'.xlsx');
+        return Excel::download(new ProductsExport($query), ExcelFile::name('제품마스터'));
     }
 
     public function template(): BinaryFileResponse
     {
         return Excel::download(new ArrayHeadingExport(
             ['제품코드', '제품명', 'gtin', '보험코드', '규격', '제조사', '공급사코드', '단위', 'box당수량', '매입가', '매출가', '보관유형']
-        ), 'products_template.xlsx');
+        ), ExcelFile::template('제품마스터'));
     }
 
     public function import(Request $request): JsonResponse
@@ -143,7 +144,7 @@ class ProductMasterController extends Controller
 
         return Excel::download(new FailedRowsExport($report,
             ['제품코드', '제품명', 'gtin', '보험코드', '규격', '제조사', '공급사코드', '단위', 'box당수량', '매입가', '매출가', '보관유형']
-        ), 'products_failures.xlsx');
+        ), ExcelFile::failures('제품마스터'));
     }
 
     /**

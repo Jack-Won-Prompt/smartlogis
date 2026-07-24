@@ -105,7 +105,15 @@
       "Bash(./vendor/bin/pest tests/Feature/Master/SafetyStockMasterTest.php --compact)",
       "Bash(./vendor/bin/pint app/Http/Controllers/Master/SafetyStockMasterController.php tests/Feature/Master)",
       "Bash(./vendor/bin/pint database/seeders/DemoDataSeeder.php)",
-      "Bash(grep -nA10 \"public function data\" app/Http/Controllers/Master/OrganizationMasterController.php)"
+      "Bash(grep -nA10 \"public function data\" app/Http/Controllers/Master/OrganizationMasterController.php)",
+      "Bash(grep -rhnA30 \"DataTable\\(\" resources/views/main/factory/lseA/item_by_warehouse/getAllDetails.blade.php)",
+      "Bash(grep -n \"use App\\\\\\\\\\\\\\\\Support\\\\|Excel::download\\\\|products_\" app/Http/Controllers/Master/ProductMasterController.php)",
+      "Bash(grep -q \"use App\\\\\\\\\\\\\\\\Support\\\\\\\\\\\\\\\\ExcelFile;\" app/Http/Controllers/Master/ProductMasterController.php)",
+      "Bash(sed -i 's#use App\\\\\\\\Support\\\\\\\\ExcelFailReport;#use App\\\\\\\\Support\\\\\\\\ExcelFailReport;\\\\nuse App\\\\\\\\Support\\\\\\\\ExcelFile;#' app/Http/Controllers/Master/ProductMasterController.php)",
+      "Bash(sed -i \"s#'products_'.now\\(\\)->format\\('Ymd_His'\\).'.xlsx'#ExcelFile::name\\('제품마스터'\\)#\" app/Http/Controllers/Master/ProductMasterController.php)",
+      "Bash(sed -i \"s#'products_template.xlsx'#ExcelFile::template\\('제품마스터'\\)#\" app/Http/Controllers/Master/ProductMasterController.php)",
+      "Bash(sed -i \"s#'products_failures.xlsx'#ExcelFile::failures\\('제품마스터'\\)#\" app/Http/Controllers/Master/ProductMasterController.php)",
+      "Bash(./vendor/bin/pest tests/Feature/Master/ProductMasterTest.php --compact)"
     ],
     "additionalDirectories": [
       "\\tmp",
