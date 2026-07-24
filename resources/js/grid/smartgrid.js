@@ -220,6 +220,9 @@ const SmartGrid = {
 
         if (onAfter) table.on('dataProcessed', onAfter);
 
+        // 엑셀 업로드 후 현재 그리드를 새로고침할 수 있도록 전역 훅 등록(x-excel-tools 가 사용).
+        window.__smartGridRefresh = () => grid.refresh();
+
         return grid;
     },
 };

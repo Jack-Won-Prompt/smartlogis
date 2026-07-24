@@ -104,7 +104,8 @@
       "mcp__playwright__browser_press_key",
       "Bash(./vendor/bin/pest tests/Feature/Master/SafetyStockMasterTest.php --compact)",
       "Bash(./vendor/bin/pint app/Http/Controllers/Master/SafetyStockMasterController.php tests/Feature/Master)",
-      "Bash(./vendor/bin/pint database/seeders/DemoDataSeeder.php)"
+      "Bash(./vendor/bin/pint database/seeders/DemoDataSeeder.php)",
+      "Bash(grep -nA10 \"public function data\" app/Http/Controllers/Master/OrganizationMasterController.php)"
     ],
     "additionalDirectories": [
       "\\tmp",

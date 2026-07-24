@@ -5,12 +5,21 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Master;
 
 use App\Enums\OrgType;
+use App\Exports\ArrayHeadingExport;
+use App\Exports\FailedRowsExport;
+use App\Exports\OrganizationsExport;
 use App\Http\Controllers\Controller;
+use App\Imports\OrganizationsImport;
 use App\Models\Organization;
+use App\Support\ExcelFailReport;
+use App\Support\ExcelFile;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
+use Maatwebsite\Excel\Facades\Excel;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 /**
  * 거래처 마스터 그리드 백엔드.
@@ -79,6 +88,47 @@ class OrganizationMasterController extends Controller
         $organization->update($validated);
 
         return response()->json($this->row($organization->fresh()->loadCount('users')));
+    }
+
+    public function export(Request $request): BinaryFileResponse
+    {
+        $query = Organization::query()->withCount('users')->filter([
+            'keyword' => $request->string('keyword')->toString() ?: null,
+            'org_type' => $request->string('org_type')->toString() ?: null,
+            'is_active' => $request->has('is_active') ? $request->string('is_active')->toString() : '',
+        ])->orderBy('code');
+
+        return Excel::download(new OrganizationsExport($query), ExcelFile::name('거래처'));
+    }
+
+    public function template(): BinaryFileResponse
+    {
+        return Excel::download(new ArrayHeadingExport(OrganizationsImport::columns()), ExcelFile::template('거래처'));
+    }
+
+    public function import(Request $request): JsonResponse
+    {
+        $request->validate(['file' => ['required', 'file', 'mimes:xlsx,xls,csv']], [], ['file' => '엑셀 파일']);
+        $import = new OrganizationsImport;
+        Excel::import($import, $request->file('file')->getRealPath());
+        $report = $import->report();
+
+        $failKey = null;
+        if ($report->hasFailures()) {
+            $failKey = 'ofail_'.uniqid();
+            Session::put($failKey, $report);
+        }
+
+        return response()->json(['message' => $report->summaryMessage(), 'failed' => $report->failureCount(), 'failKey' => $failKey]);
+    }
+
+    public function failures(string $key): BinaryFileResponse
+    {
+        abort_unless(Session::has($key), 404);
+        /** @var ExcelFailReport $report */
+        $report = Session::get($key);
+
+        return Excel::download(new FailedRowsExport($report, OrganizationsImport::columns()), ExcelFile::failures('거래처'));
     }
 
     public function bulkDestroy(Request $request): JsonResponse

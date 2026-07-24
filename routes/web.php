@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Http\Controllers\Admin\AuditLogController;
+use App\Http\Controllers\Admin\SystemController;
 use App\Http\Controllers\BarcodeController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\Inbound\InboundController;
@@ -141,10 +142,13 @@ Route::middleware('auth')->group(function () {
         });
     });
 
-    // 감사 로그 — 본사 전용
+    // 감사 로그 / 시스템 관리 — 본사 전용
     Route::middleware('role:HQ')->prefix('admin')->name('admin.')->group(function () {
         Route::get('/audit-logs', [AuditLogController::class, 'index'])->name('audit-logs');
         Route::get('/audit-logs/data', [AuditLogController::class, 'data'])->name('audit-logs.data');
+
+        // 업무 데이터 초기화(위험) — 대시보드에서 호출
+        Route::post('/reset-data', [SystemController::class, 'resetData'])->name('reset-data');
     });
 
     // 기준정보(마스터) — 본사 전용

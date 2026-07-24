@@ -4,6 +4,13 @@
         :subtitle="$role->label().' · '.now()->timezone('Asia/Seoul')->format('Y-m-d (D) H:i').' 기준'">
         <x-slot name="actions">
             <span class="chip-mono">{{ auth()->user()->organization->name }}</span>
+            @if($role === \App\Enums\OrgType::HQ)
+                <button type="button" x-data @click="$dispatch('reset-data-open')"
+                        class="btn-ghost !py-2 !text-sm !text-crit-600 !ring-crit-600/20 hover:!bg-crit-100">
+                    <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6M10 11v6M14 11v6"/></svg>
+                    데이터 초기화
+                </button>
+            @endif
         </x-slot>
     </x-page-header>
 
@@ -76,6 +83,38 @@
     </div>
 
     @push('scripts')
+        <script>
+            // 데이터 초기화 — 이중 확인 후 모든 업무 데이터 삭제(사용자·소속 조직만 유지).
+            window.addEventListener('reset-data-open', async () => {
+                const ok = await window.confirmDialog({
+                    title: '업무 데이터 초기화',
+                    message: '입고·출고·사용분·재고실사·정산·재고·알림·감사로그·제품·거래처 등 모든 업무 데이터가 영구 삭제됩니다. 사용자 계정과 소속 조직만 남습니다. 되돌릴 수 없습니다.',
+                    tone: 'crit', confirmText: '전체 삭제',
+                });
+                if (!ok) return;
+                const twice = await window.confirmDialog({
+                    title: '한 번 더 확인',
+                    message: '정말로 모든 업무 데이터를 삭제할까요? 이 작업은 취소할 수 없습니다.',
+                    tone: 'crit', confirmText: '삭제 확정',
+                });
+                if (!twice) return;
+                try {
+                    const res = await fetch('{{ route('admin.reset-data') }}', {
+                        method: 'POST',
+                        headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content, Accept: 'application/json' },
+                    });
+                    const data = await res.json().catch(() => ({}));
+                    if (res.ok) {
+                        window.toast(data.message || '초기화 완료', 'ok', '데이터 초기화');
+                        setTimeout(() => window.location.reload(), 1200);
+                    } else {
+                        window.toast(data.message || '초기화에 실패했습니다.', 'crit');
+                    }
+                } catch (e) {
+                    window.toast('초기화 중 오류가 발생했습니다.', 'crit');
+                }
+            });
+        </script>
         <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
         <script>
         // app.js(deferred module)가 window.SmartCharts 를 세팅한 뒤 실행되도록 대기
