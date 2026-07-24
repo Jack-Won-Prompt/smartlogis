@@ -6,11 +6,13 @@
     <div class="flex flex-wrap items-end gap-3">
         {{ $slot }}
 
-        @isset($actions)
-            <div class="ml-auto flex items-center gap-2">
-                {{ $actions }}
-            </div>
-        @endisset
+        <div class="ml-auto flex items-center gap-2">
+            <button type="button" data-grid-search class="btn-primary !py-2 !text-sm" data-magnetic>
+                <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+                검색
+            </button>
+            {{ $actions ?? '' }}
+        </div>
     </div>
 
     @isset($chips)
@@ -19,3 +21,14 @@
         </div>
     @endisset
 </div>
+
+@once
+    @push('scripts')
+        <script>
+            // 필터바 '검색' 버튼 → 현재 화면 그리드 새로고침(현재 필터값으로 재조회).
+            document.addEventListener('click', (e) => {
+                if (e.target.closest('[data-grid-search]') && window.__smartGridRefresh) window.__smartGridRefresh();
+            });
+        </script>
+    @endpush
+@endonce
