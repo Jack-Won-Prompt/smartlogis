@@ -112,7 +112,7 @@
         });
 
         function actionBtn(cell){
-            const s = cell.getValue();
+            const s = cell.getData().status; // _act 컬럼에는 값이 없으므로 행의 status 로 판정한다.
             const map = { APPROVED:['pick','피킹'], PICKING:['ship','배송'], SHIPPED:['deliver','완료'] };
             const a = map[s];
             if(!a) return '<span style="color:#93a4b6;font-size:12px">—</span>';
