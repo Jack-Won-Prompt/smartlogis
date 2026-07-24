@@ -1,0 +1,383 @@
+/* 폰트: Pretendard(본문·디스플레이) · IBM Plex Mono(수량/코드/금액 데이터) */
+@import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css');
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+
+/* Tabulator 기본 스타일(아래 @layer 밖에서 브랜드 테마로 오버라이드) */
+@import 'tabulator-tables/dist/css/tabulator.min.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+    :root {
+        --brand-navy: #1b3a8f;
+        --brand-blue: #2d6ae0;
+    }
+
+    html {
+        scroll-behavior: smooth;
+        -webkit-font-smoothing: antialiased;
+        text-rendering: optimizeLegibility;
+    }
+
+    body {
+        @apply font-sans text-ink-700 antialiased;
+    }
+
+    [x-cloak] {
+        display: none !important;
+    }
+
+    ::selection {
+        background: rgba(45, 106, 224, 0.2);
+    }
+
+    /* 브랜드 스크롤바 */
+    ::-webkit-scrollbar {
+        width: 10px;
+        height: 10px;
+    }
+    ::-webkit-scrollbar-thumb {
+        background: #c7d3e6;
+        border-radius: 999px;
+        border: 2px solid transparent;
+        background-clip: content-box;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+        background: #9fb2d4;
+        background-clip: content-box;
+    }
+}
+
+@layer components {
+    /* ── 버튼 ─────────────────────────────────────────── */
+    .btn {
+        @apply inline-flex items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-semibold
+               transition-all duration-300 ease-brand focus:outline-none focus-visible:ring-2
+               focus-visible:ring-brand-400 focus-visible:ring-offset-2;
+    }
+    .btn-primary {
+        @apply btn text-white shadow-lift;
+        background-image: linear-gradient(120deg, #1b3a8f 0%, #2d6ae0 60%, #4c8df5 100%);
+        background-size: 160% 160%;
+    }
+    .btn-primary:hover {
+        @apply -translate-y-0.5;
+        background-position: 100% 50%;
+        box-shadow: 0 24px 60px -18px rgba(45, 106, 224, 0.6);
+    }
+    .btn-ghost {
+        @apply btn bg-white/70 text-brand-700 ring-1 ring-inset ring-brand-100 backdrop-blur
+               hover:bg-white hover:ring-brand-300;
+    }
+    .btn-dark {
+        @apply btn bg-white/10 text-white ring-1 ring-inset ring-white/20 backdrop-blur
+               hover:bg-white/20;
+    }
+
+    /* ── 카드 ─────────────────────────────────────────── */
+    .card {
+        @apply rounded-2xl border border-slate-200/70 bg-white shadow-soft;
+    }
+    .glass {
+        @apply rounded-2xl border border-white/15 bg-white/10 backdrop-blur-xl;
+    }
+
+    /* ── 텍스트 그라데이션 ─────────────────────────────── */
+    .text-gradient {
+        @apply bg-clip-text text-transparent;
+        background-image: linear-gradient(120deg, #1b3a8f 0%, #2d6ae0 55%, #5b90f3 100%);
+    }
+
+    /* ── 라벨 뱃지(pill) ──────────────────────────────── */
+    .pill {
+        @apply inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold;
+    }
+
+    /* ── 데이터 칩 (DESIGN.md §4.2) ───────────────────── */
+    .chip-mono {
+        @apply inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50
+               px-2.5 py-1 font-mono text-xs text-ink-700;
+    }
+
+    /* ── 데이터 테이블 셀 규격 (DESIGN.md §5.1) ────────── */
+    .dt-th {
+        @apply whitespace-nowrap px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.04em] text-ink-500;
+    }
+    .dt-td {
+        @apply px-4 py-3.5 align-middle text-[13.5px] text-ink-700;
+    }
+    .dt-num {
+        @apply text-right font-mono tabular-nums;
+    }
+    /* 인라인 편집 입력 */
+    .dt-input {
+        @apply w-full rounded-lg border-line bg-surface-1 px-2.5 py-1.5 text-[13px] text-ink-900
+               focus:border-brand-500 focus:ring-2 focus:ring-brand-400/25;
+    }
+    .row-action {
+        @apply grid h-8 w-8 place-items-center rounded-lg text-ink-400 transition hover:bg-surface-2 hover:text-ink-700;
+    }
+}
+
+/* ── Scan Pulse (DESIGN.md §4.3) ──────────────────────── */
+@keyframes scan-pulse {
+    0% {
+        box-shadow: 0 0 0 0 rgba(45, 106, 224, 0);
+        border-color: #dde4ea;
+    }
+    30% {
+        box-shadow: 0 0 0 4px rgba(45, 106, 224, 0.25);
+        border-color: #2d6ae0;
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(45, 106, 224, 0);
+        border-color: #dde4ea;
+    }
+}
+@keyframes scan-shake {
+    0%, 100% { transform: translateX(0); }
+    20%, 60% { transform: translateX(-5px); }
+    40%, 80% { transform: translateX(5px); }
+}
+.scan-pulse { animation: scan-pulse 300ms cubic-bezier(0.2, 0, 0, 1); }
+.scan-shake { animation: scan-shake 200ms ease; }
+
+@media (prefers-reduced-motion: reduce) {
+    .scan-pulse, .scan-shake { animation: none; }
+}
+
+@layer utilities {
+    .font-tnum {
+        font-variant-numeric: tabular-nums;
+    }
+
+    /* 스크롤 등장: JS(IntersectionObserver)가 .is-visible 를 부여 */
+    .reveal {
+        opacity: 0;
+        transform: translateY(24px);
+        transition:
+            opacity 0.7s cubic-bezier(0.2, 0, 0, 1),
+            transform 0.7s cubic-bezier(0.2, 0, 0, 1);
+        transition-delay: var(--reveal-delay, 0ms);
+        will-change: opacity, transform;
+    }
+    .reveal.is-visible {
+        opacity: 1;
+        transform: none;
+    }
+    .reveal-scale {
+        opacity: 0;
+        transform: scale(0.94);
+        transition:
+            opacity 0.7s cubic-bezier(0.2, 0, 0, 1),
+            transform 0.7s cubic-bezier(0.2, 0, 0, 1);
+        transition-delay: var(--reveal-delay, 0ms);
+    }
+    .reveal-scale.is-visible {
+        opacity: 1;
+        transform: none;
+    }
+
+    .bg-mesh {
+        background-color: #0b1740;
+        background-image:
+            radial-gradient(45% 40% at 18% 12%, rgba(45, 106, 224, 0.45) 0%, transparent 60%),
+            radial-gradient(40% 45% at 85% 20%, rgba(91, 144, 243, 0.35) 0%, transparent 60%),
+            radial-gradient(55% 55% at 60% 100%, rgba(27, 58, 143, 0.55) 0%, transparent 65%);
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        *,
+        *::before,
+        *::after {
+            animation-duration: 0.001ms !important;
+            animation-iteration-count: 1 !important;
+            transition-duration: 0.001ms !important;
+            scroll-behavior: auto !important;
+        }
+        .reveal,
+        .reveal-scale {
+            opacity: 1;
+            transform: none;
+        }
+    }
+}
+
+/* ══ Tabulator 브랜드 테마 (SmartGrid) ══════════════════════════════ */
+.tabulator {
+    background: transparent;
+    border: 1px solid var(--line, #dde4ea);
+    border-radius: 1rem;
+    overflow: hidden;
+    font-family: 'Pretendard Variable', Pretendard, sans-serif;
+    font-size: 13.5px;
+}
+
+/* 헤더 */
+.tabulator .tabulator-header {
+    background: #eef2f5;
+    border-bottom: 1px solid #dde4ea;
+    color: #5a6e82;
+    font-weight: 600;
+}
+.tabulator .tabulator-header .tabulator-col {
+    background: transparent;
+    border-right: none;
+}
+.tabulator .tabulator-header .tabulator-col .tabulator-col-content {
+    padding: 9px 14px;
+}
+.tabulator .tabulator-header .tabulator-col-title {
+    font-size: 11px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: #5a6e82;
+}
+.tabulator .tabulator-header .tabulator-col.tabulator-sortable.tabulator-col-sorter-element:hover {
+    background: #e4eaf0;
+}
+.tabulator .tabulator-col .tabulator-col-sorter .tabulator-arrow {
+    border-bottom-color: #2d6ae0 !important;
+    border-top-color: #2d6ae0 !important;
+}
+
+/* 행 */
+.tabulator .tabulator-tableholder .tabulator-table {
+    background: #fff;
+}
+.tabulator-row {
+    border-bottom: 1px solid rgba(221, 228, 234, 0.7);
+    min-height: 38px;
+}
+.tabulator-row.tabulator-row-even {
+    background: #fff;
+}
+.tabulator-row:hover {
+    background: #eef2f5 !important;
+}
+.tabulator-row.tabulator-selected {
+    background: #eef4ff !important;
+}
+.tabulator-row .tabulator-cell {
+    padding: 8px 14px;
+    border-right: none;
+    color: #33424f;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+/* 새 행 강조 */
+.tabulator-row:has(.sg-save) {
+    background: #eef8ff !important;
+    box-shadow: inset 3px 0 0 #2d6ae0;
+}
+
+/* 편집 중 셀 */
+.tabulator-row .tabulator-cell.tabulator-editing {
+    border: 1px solid #2d6ae0 !important;
+    box-shadow: 0 0 0 2px rgba(45, 106, 224, 0.2);
+    border-radius: 6px;
+    padding: 4px 8px;
+}
+.tabulator-row .tabulator-cell.tabulator-editing input,
+.tabulator-row .tabulator-cell.tabulator-editing select {
+    font-family: inherit;
+    font-size: 13px;
+    color: #0e1a2b;
+}
+.tabulator-row .tabulator-cell.tabulator-editable:not(.tabulator-editing):hover {
+    box-shadow: inset 0 0 0 1px #bfd5fb;
+    border-radius: 6px;
+    cursor: text;
+}
+
+/* 데이터 셀 헬퍼 */
+.sg-mono {
+    font-family: 'IBM Plex Mono', monospace;
+    font-variant-numeric: tabular-nums;
+    color: #101b26;
+}
+.sg-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 9px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 500;
+}
+.sg-badge::before {
+    content: '';
+    width: 6px;
+    height: 6px;
+    border-radius: 999px;
+    background: currentColor;
+    opacity: 0.9;
+}
+.sg-ok { background: #def3e8; color: #1e8a5b; }
+.sg-warn { background: #fbefd8; color: #b4700a; }
+.sg-crit { background: #fbe4e1; color: #c2362b; }
+.sg-info { background: #e0ecf9; color: #2563a8; }
+.sg-hold { background: #edf1f4; color: #6b7a88; }
+
+/* 행 액션 아이콘 */
+.sg-act {
+    display: inline-grid;
+    place-items: center;
+    width: 26px;
+    height: 26px;
+    margin-left: 2px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 13px;
+    transition: background 0.15s;
+}
+.sg-act:hover { background: #eef2f5; }
+.sg-save { color: #1e8a5b; }
+.sg-cancel { color: #6b7a88; }
+.sg-del { color: #c2362b; }
+
+/* 푸터 / 페이지네이션 */
+.tabulator .tabulator-footer {
+    background: #fff;
+    border-top: 1px solid #dde4ea;
+    color: #5a6e82;
+    padding: 8px 12px;
+}
+.tabulator .tabulator-footer .tabulator-page {
+    border: 1px solid #dde4ea;
+    border-radius: 8px;
+    background: #fff;
+    color: #5a6e82;
+    font-family: 'IBM Plex Mono', monospace;
+    margin: 0 2px;
+    padding: 4px 10px;
+}
+.tabulator .tabulator-footer .tabulator-page:hover {
+    background: #eef2f5;
+    color: #0e1a2b;
+}
+.tabulator .tabulator-footer .tabulator-page.active {
+    background: #2551c4;
+    border-color: #2551c4;
+    color: #fff;
+}
+.tabulator .tabulator-footer .tabulator-page[disabled] {
+    opacity: 0.4;
+}
+.tabulator .tabulator-footer .tabulator-page-size {
+    border: 1px solid #dde4ea;
+    border-radius: 8px;
+    padding: 3px 8px;
+    color: #33424f;
+}
+
+/* 체크박스 */
+.tabulator-row .tabulator-cell input[type='checkbox'],
+.tabulator .tabulator-header .tabulator-col input[type='checkbox'] {
+    width: 16px;
+    height: 16px;
+    accent-color: #2551c4;
+}

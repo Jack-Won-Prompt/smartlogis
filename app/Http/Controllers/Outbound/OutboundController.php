@@ -1,0 +1,130 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Http\Controllers\Outbound;
+
+use App\Enums\OutboundSourceType;
+use App\Enums\OutboundStatus;
+use App\Http\Controllers\Controller;
+use App\Models\Outbound;
+use App\Services\DocumentNoService;
+use App\Services\InboundService;
+use App\Services\OutboundService;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
+use Illuminate\View\View;
+
+/**
+ * 출고 — 지시 등록 + 승인 + FEFO 피킹 + 배송 + 완료(병원 입고).
+ */
+class OutboundController extends Controller
+{
+    public function data(Request $request): JsonResponse
+    {
+        $query = Outbound::query()->with(['warehouse', 'hospital'])->withCount('items')
+            ->when($request->string('status')->toString(), fn ($q, $v) => $q->where('status', $v))
+            ->when($request->string('keyword')->toString(), fn ($q, $v) => $q->where('outbound_no', 'like', "%{$v}%"))
+            ->orderByDesc('id');
+
+        $size = min(max($request->integer('size', 10), 1), 100);
+        $p = $query->paginate($size, ['*'], 'page', $request->integer('page', 1));
+
+        return response()->json([
+            'last_page' => $p->lastPage(),
+            'total' => $p->total(),
+            'data' => $p->getCollection()->map(fn (Outbound $o) => [
+                'id' => $o->id,
+                'outbound_no' => $o->outbound_no,
+                'warehouse_name' => $o->warehouse->name,
+                'hospital_name' => $o->hospital->name,
+                'source_type' => $o->source_type->value,
+                'source_label' => $o->source_type->label(),
+                'status' => $o->status->value,
+                'status_label' => $o->status->label(),
+                'planned_date' => $o->planned_date?->toDateString(),
+                'items_count' => $o->items_count,
+            ])->all(),
+        ]);
+    }
+
+    public function store(Request $request, DocumentNoService $docNo): JsonResponse
+    {
+        $validated = $request->validate([
+            'warehouse_id' => ['required', 'integer', Rule::exists('organizations', 'id')->where('org_type', 'WAREHOUSE')],
+            'hospital_id' => ['required', 'integer', Rule::exists('organizations', 'id')->where('org_type', 'HOSPITAL')],
+            'planned_date' => ['required', 'date'],
+            'items' => ['required', 'array', 'min:1'],
+            'items.*.product_id' => ['required', 'integer', 'exists:products,id'],
+            'items.*.qty' => ['required', 'integer', 'min:1'],
+        ], [], ['warehouse_id' => '창고', 'hospital_id' => '병원', 'planned_date' => '출고예정일']);
+
+        $outbound = DB::transaction(function () use ($validated, $docNo, $request) {
+            $outbound = Outbound::create([
+                'outbound_no' => $docNo->next('OB'),
+                'warehouse_id' => $validated['warehouse_id'],
+                'hospital_id' => $validated['hospital_id'],
+                'status' => OutboundStatus::APPROVED,
+                'source_type' => OutboundSourceType::MANUAL,
+                'planned_date' => $validated['planned_date'],
+                'created_by' => $request->user()?->id,
+            ]);
+            foreach ($validated['items'] as $item) {
+                $outbound->items()->create(['product_id' => $item['product_id'], 'qty' => $item['qty']]);
+            }
+
+            return $outbound;
+        });
+
+        return response()->json(['id' => $outbound->id, 'outbound_no' => $outbound->outbound_no]);
+    }
+
+    public function show(Outbound $outbound): JsonResponse
+    {
+        $outbound->load(['warehouse', 'hospital', 'items.product', 'items.lot']);
+
+        return response()->json([
+            'id' => $outbound->id,
+            'outbound_no' => $outbound->outbound_no,
+            'status' => $outbound->status->value,
+            'status_label' => $outbound->status->label(),
+            'warehouse_name' => $outbound->warehouse->name,
+            'hospital_name' => $outbound->hospital->name,
+            'items' => $outbound->items->map(fn ($it) => [
+                'product_code' => $it->product->product_code,
+                'product_name' => $it->product->product_name,
+                'lot_no' => $it->lot?->lot_no,
+                'qty' => $it->qty,
+            ])->all(),
+        ]);
+    }
+
+    public function pick(Outbound $outbound, OutboundService $service, Request $request): JsonResponse
+    {
+        $service->pick($outbound, $request->user()?->id);
+
+        return response()->json(['message' => "{$outbound->outbound_no} FEFO 피킹 완료 — 창고 재고가 차감되었습니다."]);
+    }
+
+    public function ship(Outbound $outbound, OutboundService $service): JsonResponse
+    {
+        $service->ship($outbound);
+
+        return response()->json(['message' => "{$outbound->outbound_no} 배송을 시작했습니다."]);
+    }
+
+    public function deliver(Outbound $outbound, OutboundService $service, InboundService $inboundService, Request $request): JsonResponse
+    {
+        $service->deliver($outbound, $inboundService, $request->user()?->id);
+
+        return response()->json(['message' => "{$outbound->outbound_no} 배송 완료 — 병원 재고에 반영되었습니다."]);
+    }
+
+    public function index(): View
+    {
+        // 출고 지시·피킹·배송을 한 화면(생애주기)에서 처리한다.
+        return view('outbound.index');
+    }
+}

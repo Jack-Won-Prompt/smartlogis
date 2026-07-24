@@ -1,0 +1,112 @@
+- generic [active] [ref=f39e1]:
+  - complementary [ref=f39e2]:
+    - img "삼에스메디컬 SmartLogis" [ref=f39e4]
+    - navigation [ref=f39e5]:
+      - generic [ref=f39e6]:
+        - paragraph [ref=f39e7]: 대시보드
+        - link "대시보드" [ref=f39e10] [cursor=pointer]:
+          - /url: http://localhost/smartlogis/dashboard
+      - generic [ref=f39e11]:
+        - paragraph [ref=f39e12]: 기준정보
+        - link "제품 마스터" [ref=f39e15] [cursor=pointer]:
+          - /url: http://localhost/smartlogis/master/products
+        - link "거래처" [ref=f39e16] [cursor=pointer]:
+          - /url: http://localhost/smartlogis/master/organizations
+        - link "사용자" [ref=f39e17] [cursor=pointer]:
+          - /url: http://localhost/smartlogis/master/users
+        - link "안전재고" [ref=f39e18] [cursor=pointer]:
+          - /url: http://localhost/smartlogis/master/safety-stocks
+      - generic [ref=f39e19]:
+        - paragraph [ref=f39e20]: 재고
+        - link "재고 현황" [ref=f39e23] [cursor=pointer]:
+          - /url: http://localhost/smartlogis/inventory/status
+        - link "유통기한 임박" [ref=f39e25] [cursor=pointer]:
+          - /url: http://localhost/smartlogis/inventory/expiry
+        - link "재고 실사" [ref=f39e26] [cursor=pointer]:
+          - /url: http://localhost/smartlogis/stocktakes
+        - link "Lot 추적" [ref=f39e27] [cursor=pointer]:
+          - /url: http://localhost/smartlogis/inventory/lot-trace
+      - generic [ref=f39e28]:
+        - paragraph [ref=f39e29]: 입출고
+        - link "입고 예정(ASN)" [ref=f39e32] [cursor=pointer]:
+          - /url: http://localhost/smartlogis/inbounds/asn
+        - link "입고 검수" [ref=f39e33] [cursor=pointer]:
+          - /url: http://localhost/smartlogis/inbounds/receiving
+        - link "출고 지시" [ref=f39e34] [cursor=pointer]:
+          - /url: http://localhost/smartlogis/outbounds
+        - link "피킹/출고" [ref=f39e35] [cursor=pointer]:
+          - /url: http://localhost/smartlogis/outbounds/picking
+        - link "배송 현황" [ref=f39e36] [cursor=pointer]:
+          - /url: http://localhost/smartlogis/outbounds/delivery
+      - generic [ref=f39e37]:
+        - paragraph [ref=f39e38]: 사용분
+        - link "사용분 승인" [ref=f39e41] [cursor=pointer]:
+          - /url: http://localhost/smartlogis/usages/approval
+        - link "사용분 이력" [ref=f39e42] [cursor=pointer]:
+          - /url: http://localhost/smartlogis/usages
+      - generic [ref=f39e43]:
+        - paragraph [ref=f39e44]: 정산
+        - link "월 정산" [ref=f39e47] [cursor=pointer]:
+          - /url: http://localhost/smartlogis/settlements
+        - link "월 마감" [ref=f39e48] [cursor=pointer]:
+          - /url: http://localhost/smartlogis/settlements/closing
+      - generic [ref=f39e49]:
+        - paragraph [ref=f39e50]: 공급사
+        - link "자사 재고" [ref=f39e53] [cursor=pointer]:
+          - /url: http://localhost/smartlogis/supplier/stocks
+        - link "부족/납품" [ref=f39e54] [cursor=pointer]:
+          - /url: http://localhost/smartlogis/supplier/shortages
+      - generic [ref=f39e55]:
+        - paragraph [ref=f39e56]: 관리
+        - link "알림 센터" [ref=f39e59] [cursor=pointer]:
+          - /url: http://localhost/smartlogis/notifications
+        - link "감사 로그" [ref=f39e60] [cursor=pointer]:
+          - /url: http://localhost/smartlogis/admin/audit-logs
+  - generic [ref=f39e61]:
+    - banner [ref=f39e62]:
+      - button [ref=f39e64] [cursor=pointer]
+      - generic [ref=f39e67]:
+        - link [ref=f39e68] [cursor=pointer]:
+          - /url: http://localhost/smartlogis/notifications
+        - button "본" [ref=f39e73] [cursor=pointer]
+    - main [ref=f39e77]:
+      - generic [ref=f39e79]:
+        - heading "재고 현황" [level=1] [ref=f39e80]
+        - paragraph [ref=f39e81]: 위치·제품·Lot 단위 현재고와 유통기한을 조회합니다.
+      - generic [ref=f39e83]:
+        - generic [ref=f39e84]:
+          - generic [ref=f39e85]: 위치
+          - combobox [ref=f39e86]:
+            - option "전체" [selected]
+            - option "부산대학교병원"
+            - option "삼성서울병원"
+            - option "서울대학교병원"
+            - option "서울아산병원"
+            - option "세브란스병원"
+            - option "중앙 물류창고"
+        - generic [ref=f39e87]:
+          - generic [ref=f39e88]: 제품 검색
+          - textbox "제품명 / 코드" [ref=f39e89]
+      - grid [ref=f39e90]:
+        - rowgroup [ref=f39e91]:
+          - row [ref=f39e93]:
+            - columnheader "위치" [ref=f39e94]
+            - columnheader "제품코드" [ref=f39e101]
+            - columnheader "제품명" [ref=f39e108]
+            - columnheader "Lot" [ref=f39e115]
+            - columnheader "유통기한" [ref=f39e122]
+            - columnheader "현재고" [ref=f39e129]
+        - generic [ref=f39e136]:
+          - rowgroup
+        - generic [ref=f39e139]:
+          - text: 페이지당
+          - combobox "페이지당" [ref=f39e140]:
+            - option "10" [selected]
+            - option "30"
+            - option "50"
+            - option "100"
+          - button "First Page" [ref=f39e141] [cursor=pointer]: «
+          - button "Prev Page" [ref=f39e142] [cursor=pointer]: ‹
+          - button "Next Page" [ref=f39e143] [cursor=pointer]: ›
+          - button "Last Page" [ref=f39e144] [cursor=pointer]: »
+        - alert [ref=f39e146]: Loading
