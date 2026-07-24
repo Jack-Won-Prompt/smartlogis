@@ -93,7 +93,11 @@
       "Bash(./vendor/bin/pint app/Http/Controllers/Auth)",
       "Bash(./vendor/bin/pest tests/Feature/Auth --compact)",
       "Bash(php -r '$j=json_decode\\(file_get_contents\\(\"composer.json\"\\),true\\); foreach\\([\"require\",\"require-dev\"] as $s\\){echo \"[$s]\\\\n\"; foreach\\($j[$s]??[] as $k=>$v\\) echo \" $k: $v\\\\n\";}')",
-      "Bash(php -r '$j=json_decode\\(file_get_contents\\(\"composer.lock\"\\),true\\); $want=[\"laravel/framework\",\"laravel/tinker\",\"livewire/livewire\",\"maatwebsite/excel\",\"larastan/larastan\",\"laravel/breeze\",\"pestphp/pest\",\"nunomaduro/collision\",\"spatie/laravel-ignition\"]; foreach\\(array_merge\\($j[\"packages\"],$j[\"packages-dev\"]\\) as $p\\){ if\\(in_array\\($p[\"name\"],$want\\)\\) echo str_pad\\($p[\"name\"],28\\).\" \".$p[\"version\"].\"\\\\n\"; }')"
+      "Bash(php -r '$j=json_decode\\(file_get_contents\\(\"composer.lock\"\\),true\\); $want=[\"laravel/framework\",\"laravel/tinker\",\"livewire/livewire\",\"maatwebsite/excel\",\"larastan/larastan\",\"laravel/breeze\",\"pestphp/pest\",\"nunomaduro/collision\",\"spatie/laravel-ignition\"]; foreach\\(array_merge\\($j[\"packages\"],$j[\"packages-dev\"]\\) as $p\\){ if\\(in_array\\($p[\"name\"],$want\\)\\) echo str_pad\\($p[\"name\"],28\\).\" \".$p[\"version\"].\"\\\\n\"; }')",
+      "Bash(git commit -q -m '@ *)",
+      "Bash(git commit *)",
+      "Bash(xargs echo \"라우트 수:\")",
+      "Bash(./vendor/bin/pint --test app routes tests)"
     ],
     "additionalDirectories": [
       "\\tmp",

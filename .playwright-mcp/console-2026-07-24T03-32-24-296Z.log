@@ -1,5 +1,0 @@
-[  457609ms] Uncaught TypeError: this._fn is not a function
-    at tick (https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js:18:46366)
-    at <anonymous> (https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js:12:6898)
-    at _update (https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js:12:6726)
-    at <anonymous> (https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js:12:6619)

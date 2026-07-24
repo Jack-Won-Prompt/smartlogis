@@ -17,3 +17,11 @@ yarn-error.log
 /.fleet
 /.idea
 /.vscode
+
+# 개발 중 산출물(스크린샷/플레이라이트 스냅샷)
+.playwright-mcp/
+*.jpeg
+dash6.jpeg
+audit*.jpeg
+m-*.jpeg
+l12-*.jpeg
