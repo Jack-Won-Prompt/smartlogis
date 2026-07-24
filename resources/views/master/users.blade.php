@@ -27,40 +27,50 @@
         <x-slot:actions><button id="f-reset" class="rounded-lg border border-line bg-surface-1 px-4 py-2 text-sm font-medium text-ink-600 hover:bg-surface-0">초기화</button></x-slot:actions>
     </x-filter-bar>
 
-    <div class="mb-4 mt-4 flex items-center justify-end gap-2">
-        <button id="btn-delete" class="btn-ghost !py-2 !text-sm !text-crit-600 !ring-crit-600/20 hover:!bg-crit-100">선택 삭제</button>
-        <button id="btn-add" class="btn-primary !py-2 !text-sm" data-magnetic>
-            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg> 행 추가
-        </button>
+    <div class="mb-4 mt-4 flex flex-wrap items-center justify-between gap-3">
+        <x-excel-tools
+            :download="route('master.users.export')"
+            :upload="route('master.users.import')"
+            :template="route('master.users.template')"
+            :failures="url('master/users/failures')"
+            name="사용자"
+            note="양식(아이디·이름·역할·소속코드·이메일)을 작성해 업로드하세요. 아이디가 같으면 갱신됩니다."
+            params="{ keyword: document.getElementById('f-keyword').value, role: document.getElementById('f-role').value, status: document.getElementById('f-status').value }" />
+        <div class="flex items-center gap-2">
+            <button id="btn-delete" class="btn-ghost !py-2 !text-sm !text-crit-600 !ring-crit-600/20 hover:!bg-crit-100">선택 삭제</button>
+            <button id="btn-add" class="btn-primary !py-2 !text-sm" data-magnetic>
+                <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg> 행 추가
+            </button>
+        </div>
     </div>
 
-    <div id="user-grid"></div>
+    <x-grid-assets />
+    <div class="dt-container mt-1"><table id="user-grid" style="width:100%"></table></div>
 
     @push('scripts')
     <script>
-        window.addEventListener('DOMContentLoaded', () => {
+        jQuery(function () {
             const roleMap = @json($roles);
             const statusMap = @json($statuses);
             const orgMap = @json($orgs->pluck('name','id'));
             const statusTones = { PENDING:'warn', INVITED:'info', ACTIVE:'ok', SUSPENDED:'hold' };
             function f(id){ return document.getElementById(id).value; }
-            const filters = () => ({ keyword:f('f-keyword'), role:f('f-role'), status:f('f-status') });
 
-            const grid = window.SmartGrid.create('#user-grid', {
+            const grid = window.SmartDT.create('#user-grid', {
                 dataUrl: '{{ route('master.users.data') }}',
                 createUrl: '{{ route('master.users.store') }}',
                 updateUrl: (id) => `{{ url('master/users') }}/${id}`,
                 deleteUrl: '{{ route('master.users.bulkDestroy') }}',
-                params: filters,
+                params: () => ({ keyword:f('f-keyword'), role:f('f-role'), status:f('f-status') }),
                 defaults: { login_id:'', email:'', name:'', role:'HOSPITAL', org_id:'', status:'ACTIVE' },
                 columns: [
-                    { title:'아이디', field:'login_id', editor:'input', width:130, formatter: window.SmartGrid.mono },
-                    { title:'이름', field:'name', editor:'input', width:120 },
-                    { title:'역할', field:'role', editor:'list', editorParams:{values:roleMap}, width:110, formatter:(c)=>roleMap[c.getValue()]||c.getValue() },
-                    { title:'소속', field:'org_id', editor:'list', editorParams:{values:orgMap}, minWidth:160, formatter:(c)=>orgMap[c.getValue()]??c.getData().org_name??'' },
-                    { title:'이메일', field:'email', editor:'input', minWidth:180 },
-                    { title:'상태', field:'status', editor:'list', editorParams:{values:statusMap}, width:110,
-                      formatter:(c)=>{const v=c.getValue();return `<span class="sg-badge sg-${statusTones[v]||'hold'}">${statusMap[v]||v}</span>`;} },
+                    { title:'아이디', field:'login_id', editor:'input', render: window.SmartDT.mono },
+                    { title:'이름', field:'name', editor:'input' },
+                    { title:'역할', field:'role', editor:'list', values:roleMap, render:(v)=>roleMap[v]||v },
+                    { title:'소속', field:'org_id', editor:'list', values:orgMap, render:(v,row)=>orgMap[v]??row.org_name??'' },
+                    { title:'이메일', field:'email', editor:'input' },
+                    { title:'상태', field:'status', editor:'list', values:statusMap,
+                      render:(v)=>`<span class="sdt-badge sdt-${statusTones[v]||'hold'}">${statusMap[v]||v}</span>` },
                 ],
             });
 

@@ -11,6 +11,7 @@ use App\Http\Controllers\Controller;
 use App\Imports\SafetyStocksImport;
 use App\Models\SafetyStock;
 use App\Support\ExcelFailReport;
+use App\Support\ExcelFile;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -135,12 +136,12 @@ class SafetyStockMasterController extends Controller
             ->when($request->integer('hospital_id'), fn ($q, $v) => $q->where('hospital_id', $v))
             ->orderBy('hospital_id')->orderBy('product_id');
 
-        return Excel::download(new SafetyStocksExport($query), 'safety_stocks_'.now()->format('Ymd_His').'.xlsx');
+        return Excel::download(new SafetyStocksExport($query), ExcelFile::name('안전재고'));
     }
 
     public function template(): BinaryFileResponse
     {
-        return Excel::download(new ArrayHeadingExport(['병원코드', '제품코드', '안전재고', '최대재고', '보충수량']), 'safety_stocks_template.xlsx');
+        return Excel::download(new ArrayHeadingExport(['병원코드', '제품코드', '안전재고', '최대재고', '보충수량']), ExcelFile::template('안전재고'));
     }
 
     public function import(Request $request): JsonResponse
@@ -165,7 +166,7 @@ class SafetyStockMasterController extends Controller
         /** @var ExcelFailReport $report */
         $report = Session::get($key);
 
-        return Excel::download(new FailedRowsExport($report, ['병원코드', '제품코드', '안전재고', '최대재고', '보충수량']), 'safety_stocks_failures.xlsx');
+        return Excel::download(new FailedRowsExport($report, ['병원코드', '제품코드', '안전재고', '최대재고', '보충수량']), ExcelFile::failures('안전재고'));
     }
 
     /**

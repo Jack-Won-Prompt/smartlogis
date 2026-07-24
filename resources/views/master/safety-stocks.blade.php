@@ -22,20 +22,14 @@
     </x-filter-bar>
 
     <div class="mb-4 mt-4 flex flex-wrap items-center justify-between gap-3">
-        <div class="flex items-center gap-2" x-data="{ open:false, importing:false, failKey:null }">
-            <a href="{{ route('master.safety-stocks.export') }}" class="btn-ghost !py-2 !text-sm">엑셀 다운로드</a>
-            <button @click="open=!open" class="btn-ghost !py-2 !text-sm">엑셀 업로드</button>
-            <div x-show="open" x-cloak @click.outside="open=false" class="absolute z-30 mt-24 w-80 rounded-xl border border-line bg-surface-1 p-4 shadow-lift">
-                <p class="text-sm font-semibold text-ink-900">안전재고 엑셀 업로드</p>
-                <p class="mt-1 text-xs text-ink-500">병원코드·제품코드 기준으로 갱신됩니다.</p>
-                <a href="{{ route('master.safety-stocks.template') }}" class="mt-3 inline-block text-xs font-semibold text-brand-600 hover:text-brand-700">양식 다운로드</a>
-                <input type="file" id="import-file" accept=".xlsx,.xls,.csv" class="mt-3 block w-full text-xs file:mr-2 file:rounded-lg file:border-0 file:bg-brand-50 file:px-3 file:py-1.5 file:font-semibold file:text-brand-700">
-                <button @click="ssImport($event,this)" :disabled="importing" class="mt-3 w-full rounded-lg bg-brand-600 px-3 py-2 text-sm font-semibold text-white hover:bg-brand-700 disabled:opacity-50">
-                    <span x-text="importing ? '처리 중…' : '업로드 실행'"></span>
-                </button>
-                <template x-if="failKey"><a :href="`{{ url('master/safety-stocks/failures') }}/${failKey}`" class="mt-2 block rounded-lg border border-crit-600/30 bg-crit-100 px-3 py-2 text-center text-xs font-semibold text-crit-600">실패 행 다운로드</a></template>
-            </div>
-        </div>
+        <x-excel-tools
+            :download="route('master.safety-stocks.export')"
+            :upload="route('master.safety-stocks.import')"
+            :template="route('master.safety-stocks.template')"
+            :failures="url('master/safety-stocks/failures')"
+            name="안전재고"
+            note="병원코드·제품코드 기준으로 갱신됩니다."
+            params="{ hospital_id: document.getElementById('f-hospital').value, keyword: document.getElementById('f-keyword').value }" />
         <div class="flex items-center gap-2">
             <button id="btn-suggest" class="btn-ghost !py-2 !text-sm">
                 <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-3-6.7M21 4v4h-4"/></svg>
@@ -48,29 +42,30 @@
         </div>
     </div>
 
-    <div id="ss-grid"></div>
+    <x-grid-assets />
+    <div class="dt-container mt-1"><table id="ss-grid" style="width:100%"></table></div>
 
     @push('scripts')
     <script>
-        window.addEventListener('DOMContentLoaded', () => {
+        jQuery(function () {
             const hospitalMap = @json($hospitals->pluck('name','id'));
             const productMap = @json($products->mapWithKeys(fn($p)=>[$p->id => $p->product_name.' ('.$p->product_code.')']));
             function f(id){ return document.getElementById(id).value; }
-            const filters = () => ({ hospital_id:f('f-hospital'), keyword:f('f-keyword') });
+            const num = (v)=>`<span class="sdt-mono">${Number(v||0).toLocaleString()}</span>`;
 
-            const grid = window.SmartGrid.create('#ss-grid', {
+            const grid = window.SmartDT.create('#ss-grid', {
                 dataUrl: '{{ route('master.safety-stocks.data') }}',
                 createUrl: '{{ route('master.safety-stocks.store') }}',
                 updateUrl: (id) => `{{ url('master/safety-stocks') }}/${id}`,
                 deleteUrl: '{{ route('master.safety-stocks.bulkDestroy') }}',
-                params: filters,
+                params: () => ({ hospital_id:f('f-hospital'), keyword:f('f-keyword') }),
                 defaults: { hospital_id:'', product_id:'', safety_qty:0, max_qty:0, reorder_qty:0 },
                 columns: [
-                    { title:'병원', field:'hospital_id', editor:'list', editorParams:{values:hospitalMap}, minWidth:150, formatter:(c)=>hospitalMap[c.getValue()]??c.getData().hospital_name??'' },
-                    { title:'제품', field:'product_id', editor:'list', editorParams:{values:productMap}, minWidth:220, formatter:(c)=>c.getData().product_name ?? (productMap[c.getValue()]||'') },
-                    { title:'안전재고', field:'safety_qty', editor:'number', hozAlign:'right', width:120, formatter:(c)=>`<span class="sg-mono" style="font-weight:600">${Number(c.getValue()).toLocaleString()}</span>` },
-                    { title:'최대재고', field:'max_qty', editor:'number', hozAlign:'right', width:120, formatter:(c)=>`<span class="sg-mono">${Number(c.getValue()).toLocaleString()}</span>` },
-                    { title:'보충수량', field:'reorder_qty', editor:'number', hozAlign:'right', width:120, formatter:(c)=>`<span class="sg-mono">${Number(c.getValue()).toLocaleString()}</span>` },
+                    { title:'병원', field:'hospital_id', editor:'list', values:hospitalMap, render:(v,row)=>hospitalMap[v]??row.hospital_name??'' },
+                    { title:'제품', field:'product_id', editor:'list', values:productMap, render:(v,row)=>row.product_name ?? (productMap[v]||'') },
+                    { title:'안전재고', field:'safety_qty', editor:'number', align:'right', render:(v)=>`<span class="sdt-mono" style="font-weight:600">${Number(v||0).toLocaleString()}</span>` },
+                    { title:'최대재고', field:'max_qty', editor:'number', align:'right', render:num },
+                    { title:'보충수량', field:'reorder_qty', editor:'number', align:'right', render:num },
                 ],
             });
 
@@ -92,21 +87,6 @@
                 grid.refresh();
             });
         });
-
-        async function ssImport(e, ctx){
-            const input = document.getElementById('import-file');
-            if(!input.files.length){ window.toast('파일을 선택하세요.','warn'); return; }
-            ctx.importing = true;
-            const fd = new FormData(); fd.append('file', input.files[0]);
-            try {
-                const res = await fetch('{{ route('master.safety-stocks.import') }}', { method:'POST', headers:{'X-CSRF-TOKEN':document.querySelector('meta[name=csrf-token]').content, Accept:'application/json'}, body: fd });
-                const data = await res.json();
-                ctx.failKey = data.failKey;
-                window.toast(data.message, data.failed ? 'warn':'ok', '엑셀 업로드');
-                location.reload();
-            } catch(err){ window.toast('업로드 중 오류가 발생했습니다.','crit'); }
-            finally { ctx.importing = false; }
-        }
     </script>
     @endpush
 </x-app-layout>

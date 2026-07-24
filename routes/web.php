@@ -176,6 +176,10 @@ Route::middleware('auth')->group(function () {
             Route::post('/', 'store')->name('store');
             Route::patch('/{organization}', 'update')->name('update');
             Route::delete('/', 'bulkDestroy')->name('bulkDestroy');
+            Route::get('/export', 'export')->name('export');
+            Route::get('/template', 'template')->name('template');
+            Route::post('/import', 'import')->name('import');
+            Route::get('/failures/{key}', 'failures')->name('failures');
         });
 
         // 사용자 마스터
@@ -186,6 +190,10 @@ Route::middleware('auth')->group(function () {
             Route::patch('/{user}', 'update')->name('update');
             Route::post('/{user}/reset-password', 'resetPassword')->name('resetPassword');
             Route::delete('/', 'bulkDestroy')->name('bulkDestroy');
+            Route::get('/export', 'export')->name('export');
+            Route::get('/template', 'template')->name('template');
+            Route::post('/import', 'import')->name('import');
+            Route::get('/failures/{key}', 'failures')->name('failures');
         });
 
         // 안전재고 마스터

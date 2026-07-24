@@ -6,14 +6,23 @@ namespace App\Http\Controllers\Master;
 
 use App\Enums\OrgType;
 use App\Enums\UserStatus;
+use App\Exports\ArrayHeadingExport;
+use App\Exports\FailedRowsExport;
+use App\Exports\UsersExport;
 use App\Http\Controllers\Controller;
+use App\Imports\UsersImport;
 use App\Models\User;
+use App\Support\ExcelFailReport;
+use App\Support\ExcelFile;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
+use Maatwebsite\Excel\Facades\Excel;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 /**
  * 사용자 마스터 그리드 백엔드. 인라인 편집 + 비밀번호 초기화.
@@ -105,6 +114,49 @@ class UserMasterController extends Controller
         $user->update(['password' => Hash::make($temp)]);
 
         return response()->json(['temp' => $temp]);
+    }
+
+    public function export(Request $request): BinaryFileResponse
+    {
+        $kw = $request->string('keyword')->toString();
+        $query = User::query()->with('organization')
+            ->when($kw, fn ($q) => $q->where(fn ($s) => $s
+                ->where('name', 'like', "%{$kw}%")->orWhere('login_id', 'like', "%{$kw}%")->orWhere('email', 'like', "%{$kw}%")))
+            ->when($request->string('role')->toString(), fn ($q, $v) => $q->where('role', $v))
+            ->when($request->string('status')->toString(), fn ($q, $v) => $q->where('status', $v))
+            ->orderBy('login_id');
+
+        return Excel::download(new UsersExport($query), ExcelFile::name('사용자'));
+    }
+
+    public function template(): BinaryFileResponse
+    {
+        return Excel::download(new ArrayHeadingExport(UsersImport::columns()), ExcelFile::template('사용자'));
+    }
+
+    public function import(Request $request): JsonResponse
+    {
+        $request->validate(['file' => ['required', 'file', 'mimes:xlsx,xls,csv']], [], ['file' => '엑셀 파일']);
+        $import = new UsersImport;
+        Excel::import($import, $request->file('file')->getRealPath());
+        $report = $import->report();
+
+        $failKey = null;
+        if ($report->hasFailures()) {
+            $failKey = 'ufail_'.uniqid();
+            Session::put($failKey, $report);
+        }
+
+        return response()->json(['message' => $report->summaryMessage(), 'failed' => $report->failureCount(), 'failKey' => $failKey]);
+    }
+
+    public function failures(string $key): BinaryFileResponse
+    {
+        abort_unless(Session::has($key), 404);
+        /** @var ExcelFailReport $report */
+        $report = Session::get($key);
+
+        return Excel::download(new FailedRowsExport($report, UsersImport::columns()), ExcelFile::failures('사용자'));
     }
 
     public function bulkDestroy(Request $request): JsonResponse

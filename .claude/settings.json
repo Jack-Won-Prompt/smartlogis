@@ -113,7 +113,12 @@
       "Bash(sed -i \"s#'products_'.now\\(\\)->format\\('Ymd_His'\\).'.xlsx'#ExcelFile::name\\('제품마스터'\\)#\" app/Http/Controllers/Master/ProductMasterController.php)",
       "Bash(sed -i \"s#'products_template.xlsx'#ExcelFile::template\\('제품마스터'\\)#\" app/Http/Controllers/Master/ProductMasterController.php)",
       "Bash(sed -i \"s#'products_failures.xlsx'#ExcelFile::failures\\('제품마스터'\\)#\" app/Http/Controllers/Master/ProductMasterController.php)",
-      "Bash(./vendor/bin/pest tests/Feature/Master/ProductMasterTest.php --compact)"
+      "Bash(./vendor/bin/pest tests/Feature/Master/ProductMasterTest.php --compact)",
+      "Bash(grep -q \"use App\\\\\\\\\\\\\\\\Support\\\\\\\\\\\\\\\\ExcelFile;\" app/Http/Controllers/Master/SafetyStockMasterController.php)",
+      "Bash(sed -i 's#use App\\\\\\\\Support\\\\\\\\ExcelFailReport;#use App\\\\\\\\Support\\\\\\\\ExcelFailReport;\\\\nuse App\\\\\\\\Support\\\\\\\\ExcelFile;#' app/Http/Controllers/Master/SafetyStockMasterController.php)",
+      "Bash(sed -i \"s#'safety_stocks_'.now\\(\\)->format\\('Ymd_His'\\).'.xlsx'#ExcelFile::name\\('안전재고'\\)#\" app/Http/Controllers/Master/SafetyStockMasterController.php)",
+      "Bash(sed -i \"s#'safety_stocks_template.xlsx'#ExcelFile::template\\('안전재고'\\)#\" app/Http/Controllers/Master/SafetyStockMasterController.php)",
+      "Bash(sed -i \"s#'safety_stocks_failures.xlsx'#ExcelFile::failures\\('안전재고'\\)#\" app/Http/Controllers/Master/SafetyStockMasterController.php)"
     ],
     "additionalDirectories": [
       "\\tmp",
