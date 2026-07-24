@@ -20,10 +20,10 @@
     <div id="ap-grid" class="mt-4"></div>
 
     {{-- 승인/반려 모달 --}}
-    <div x-data="approval()" @ap-open.window="load($event.detail)" x-show="show" x-cloak class="fixed inset-0 z-[90]" @keydown.escape.window="show=false">
+    <div x-data="approval()" @ap-open.window="load($event.detail)" x-show="show" x-cloak class="fixed inset-0 z-[90] flex items-center justify-center p-4" @keydown.escape.window="show=false">
         <div class="absolute inset-0 bg-navy/40 backdrop-blur-sm" @click="show=false"></div>
-        <div class="absolute inset-y-0 right-0 flex w-full max-w-xl flex-col bg-surface-1 shadow-lift"
-             x-show="show" x-transition:enter="transition ease-brand duration-300" x-transition:enter-start="translate-x-full" x-transition:enter-end="translate-x-0">
+        <div class="relative flex max-h-[88vh] w-full max-w-xl flex-col overflow-hidden rounded-2xl bg-surface-1 shadow-lift"
+             x-show="show" x-transition:enter="transition ease-brand duration-200" x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100">
             <div class="flex items-center justify-between border-b border-line px-6 py-4">
                 <div><h3 class="font-display text-lg font-bold text-ink-900" x-text="doc.report_no"></h3>
                     <p class="text-xs text-ink-500"><span x-text="doc.hospital_name"></span> · <span x-text="doc.usage_date"></span></p></div>

@@ -25,10 +25,10 @@
     <div id="st-grid"></div>
 
     {{-- 실사 입력 모달 --}}
-    <div x-data="stCount()" @st-open.window="load($event.detail)" x-show="show" x-cloak class="fixed inset-0 z-[90]" @keydown.escape.window="show=false">
+    <div x-data="stCount()" @st-open.window="load($event.detail)" x-show="show" x-cloak class="fixed inset-0 z-[90] flex items-center justify-center p-4" @keydown.escape.window="show=false">
         <div class="absolute inset-0 bg-navy/40 backdrop-blur-sm" @click="show=false"></div>
-        <div class="absolute inset-y-0 right-0 flex w-full max-w-2xl flex-col bg-surface-1 shadow-lift"
-             x-show="show" x-transition:enter="transition ease-brand duration-300" x-transition:enter-start="translate-x-full" x-transition:enter-end="translate-x-0">
+        <div class="relative flex max-h-[88vh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl bg-surface-1 shadow-lift"
+             x-show="show" x-transition:enter="transition ease-brand duration-200" x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100">
             <div class="flex items-center justify-between border-b border-line px-6 py-4">
                 <div><h3 class="font-display text-lg font-bold text-ink-900" x-text="doc.stocktake_no"></h3><p class="text-xs text-ink-500" x-text="doc.org_name"></p></div>
                 <button @click="show=false" class="text-ink-400 hover:text-ink-700"><svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
