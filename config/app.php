@@ -30,6 +30,9 @@ return [
 
     'env' => env('APP_ENV', 'production'),
 
+    // 로그인 화면에 테스트 계정 안내 패널을 노출할지 여부(테스트/스테이징에서만 true 권장).
+    'show_test_accounts' => env('SHOW_TEST_ACCOUNTS', false),
+
     /*
     |--------------------------------------------------------------------------
     | Application Debug Mode

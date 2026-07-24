@@ -77,6 +77,52 @@
         </button>
     </form>
 
+    @if(config('app.show_test_accounts'))
+        @php
+            // 테스트용 대표 계정(역할별). 모든 시드/데모 계정 비밀번호는 'password'.
+            $testAccounts = [
+                ['본사',   'hq@smartlogis.test',          '전체 · 승인/정산/마스터'],
+                ['물류창고', 'wh1@smartlogis.test',         '입출고 · 배송 · 창고재고'],
+                ['병원',   'seoul@smartlogis.test',       '서울대병원 · 재고/사용분'],
+                ['공급사',  'sup-samsung@smartlogis.test', '삼성메디슨 · 자사재고/부족'],
+            ];
+        @endphp
+        <div x-data="{
+                open: true,
+                fill(email) {
+                    const e = document.getElementById('email');
+                    const p = document.getElementById('password');
+                    e.value = email; p.value = 'password';
+                    e.dispatchEvent(new Event('input')); p.dispatchEvent(new Event('input'));
+                    window.toast?.('테스트 계정이 입력되었습니다. 로그인 버튼을 누르세요.', 'info');
+                }
+             }"
+             class="mt-8 rounded-2xl border border-amber-300/60 bg-amber-50/70 p-4">
+            <button type="button" @click="open = !open"
+                    class="flex w-full items-center justify-between text-left">
+                <span class="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-amber-700">
+                    <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4M12 17h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/></svg>
+                    테스트 계정 (개발용)
+                </span>
+                <svg class="h-4 w-4 text-amber-600 transition-transform" :class="open && 'rotate-180'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+            </button>
+            <div x-show="open" x-transition class="mt-3 space-y-1.5">
+                <p class="text-[11px] text-amber-700/80">클릭하면 자동 입력됩니다. 모든 계정 비밀번호는 <span class="font-mono font-semibold">password</span></p>
+                @foreach($testAccounts as [$role, $email, $desc])
+                    <button type="button" @click="fill('{{ $email }}')"
+                            class="group flex w-full items-center gap-3 rounded-lg border border-amber-200 bg-white/80 px-3 py-2 text-left transition-colors hover:border-amber-400 hover:bg-white">
+                        <span class="inline-flex w-14 shrink-0 justify-center rounded-md bg-amber-100 px-1.5 py-0.5 text-[11px] font-bold text-amber-700">{{ $role }}</span>
+                        <span class="min-w-0 flex-1">
+                            <span class="block truncate font-mono text-xs font-semibold text-ink-800">{{ $email }}</span>
+                            <span class="block truncate text-[11px] text-ink-400">{{ $desc }}</span>
+                        </span>
+                        <svg class="h-4 w-4 shrink-0 text-amber-400 opacity-0 transition-opacity group-hover:opacity-100" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+                    </button>
+                @endforeach
+            </div>
+        </div>
+    @endif
+
     <div class="mt-8 flex items-center gap-3 text-xs text-ink-300">
         <span class="h-px flex-1 bg-slate-200"></span>
         아직 거래처 계정이 없으신가요?
