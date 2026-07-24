@@ -39,7 +39,7 @@
            :class="mobileNav && '!translate-x-0'">
         <div class="flex h-14 items-center border-b border-white/5 px-5">
             {{-- 사이드바(솔리드 네이비) → 다크 전용 로고 직접 --}}
-            <img src="{{ asset('images/smartlogis_white_v3_300x150.png') }}" alt="삼에스메디컬 SmartLogis" class="h-9 w-auto object-contain">
+            <img src="{{ asset('images/smartlogis_white_v3_300x150.png') }}" alt="삼에스메디컬 SmartLogis" class="w-auto object-contain">
         </div>
 
         <nav class="flex h-[calc(100vh-3.5rem)] flex-col gap-6 overflow-y-auto px-3 py-5">
