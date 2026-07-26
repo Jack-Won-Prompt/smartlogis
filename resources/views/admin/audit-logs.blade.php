@@ -25,25 +25,16 @@
         </div>
     </x-filter-bar>
 
-    <x-grid-assets />
+    <x-ww-grid-assets />
     <div id="audit-grid" class="mt-4"></div>
 
     @push('scripts')
     <script>
-        jQuery(function () {
-            const badge = window.SmartTUI.badge({
-                CREATE:{label:'생성',tone:'ok'}, UPDATE:{label:'수정',tone:'info'}, DELETE:{label:'삭제',tone:'crit'},
-                APPROVE:{label:'승인',tone:'ok'}, REJECT:{label:'반려',tone:'warn'}, CLOSE:{label:'마감',tone:'info'},
-                REOPEN:{label:'마감취소',tone:'warn'}, LOGIN:{label:'로그인',tone:'hold'}, LOGOUT:{label:'로그아웃',tone:'hold'},
-            });
-            const diff = (v) => {
-                if (!v) return '<span class="stui-mono">—</span>';
-                const esc = String(v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-                return `<span class="stui-mono" style="font-size:11px" title="${esc}">${String(v).length>60 ? esc.slice(0,60)+'…' : esc}</span>`;
-            };
+        window.addEventListener('DOMContentLoaded', function () {
+            const actionMap = { CREATE:'생성', UPDATE:'수정', DELETE:'삭제', APPROVE:'승인', REJECT:'반려', CLOSE:'마감', REOPEN:'마감취소', LOGIN:'로그인', LOGOUT:'로그아웃' };
 
-            const grid = window.SmartTUI.create('#audit-grid', {
-                dataUrl:'{{ route('admin.audit-logs.data') }}', readonly:true, pageSize:30,
+            const grid = window.WWGrid.connect('#audit-grid', {
+                dataUrl:'{{ route('admin.audit-logs.data') }}', readonly:true, screenName:'감사로그',
                 params:()=>({
                     action:document.getElementById('f-action').value,
                     entity:document.getElementById('f-entity').value,
@@ -51,13 +42,13 @@
                     date_to:document.getElementById('f-to').value,
                 }),
                 columns:[
-                    { title:'일시', field:'created_at', width:170, html: window.SmartTUI.mono },
+                    { title:'일시', field:'created_at', width:170 },
                     { title:'사용자', field:'user_name', width:130 },
-                    { title:'동작', field:'action', width:100, html: badge },
-                    { title:'대상', field:'entity', width:140, html: window.SmartTUI.mono },
-                    { title:'대상ID', field:'entity_id', width:80, align:'right', html:(v)=>`<span class="stui-mono">${v??'—'}</span>` },
-                    { title:'변경 전', field:'before', minWidth:200, html: diff },
-                    { title:'변경 후', field:'after', minWidth:200, html: diff },
+                    { title:'동작', field:'action', editor:'list', values:actionMap, width:100 },
+                    { title:'대상', field:'entity', width:140 },
+                    { title:'대상ID', field:'entity_id', width:80, align:'right' },
+                    { title:'변경 전', field:'before', width:260 },
+                    { title:'변경 후', field:'after', width:260 },
                 ],
             });
             let t;

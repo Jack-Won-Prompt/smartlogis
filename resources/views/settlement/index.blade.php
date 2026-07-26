@@ -16,7 +16,7 @@
         </div>
     </x-filter-bar>
 
-    <x-grid-assets />
+    <x-ww-grid-assets />
     <div id="st-grid" class="mt-4"></div>
 
     @push('scripts')
@@ -25,16 +25,16 @@
             const tones={ OPEN:'info', CONFIRMED:'ok', CLOSED:'hold' };
             const typeTones={ SALES:'ok', PURCHASE:'warn' };
             function f(id){ return document.getElementById(id).value.replace('-','-'); }
-            const grid = window.SmartTUI.create('#st-grid', {
-                dataUrl:'{{ route('settlements.data') }}', readonly:true,
+            const grid = window.WWGrid.connect('#st-grid', {
+                dataUrl:'{{ route('settlements.data') }}', readonly:true, screenName:'정산',
                 params:()=>({ year_month:document.getElementById('f-ym').value, settle_type:document.getElementById('f-type').value }),
                 columns:[
-                    { title:'정산월', field:'year_month', width:110, html: window.SmartTUI.mono },
-                    { title:'유형', field:'settle_type', width:90, html:(v,row)=>`<span class="stui-badge stui-${typeTones[v]||'hold'}">${row.settle_label}</span>` },
-                    { title:'거래처', field:'org_name', minWidth:160 },
-                    { title:'수량', field:'total_qty', width:100, align:'right', html:(v,row)=>`<span class="stui-mono">${Number(v).toLocaleString()}</span>` },
-                    { title:'금액', field:'total_amount', width:160, align:'right', html: window.SmartTUI.money },
-                    { title:'상태', field:'status', width:100, html:(v,row)=>`<span class="stui-badge stui-${tones[v]||'hold'}">${row.status_label}</span>` },
+                    { title:'정산월', field:'year_month', width:110 },
+                    { title:'유형', field:'settle_label', width:90 },
+                    { title:'거래처', field:'org_name', width:180 },
+                    { title:'수량', field:'total_qty', editor:'number', width:100 },
+                    { title:'금액', field:'total_amount', editor:'number', width:160 },
+                    { title:'상태', field:'status_label', width:100 },
                 ],
             });
             ['f-ym','f-type'].forEach(id=>document.getElementById(id).addEventListener('change',()=>grid.refresh()));

@@ -32,7 +32,7 @@
         </div>
     </x-filter-bar>
 
-    <x-grid-assets />
+    <x-ww-grid-assets />
     <div id="expiry-grid" class="mt-4"></div>
 
     @push('scripts')
@@ -42,17 +42,18 @@
             function f(id){ const el=document.getElementById(id); return el?el.value:''; }
             const filters = () => ({ within, org_id: f('f-org'), keyword: f('f-keyword') });
 
-            const grid = window.SmartTUI.create('#expiry-grid', {
+            const grid = window.WWGrid.connect('#expiry-grid', {
                 dataUrl: '{{ route('inventory.expiry.data') }}',
-                readonly: true,
+                readonly: true, screenName: '유통기한임박',
                 params: filters,
                 columns: [
-                    { title:'위치', field:'org_name', minWidth:140 },
-                    { title:'제품코드', field:'product_code', width:120, html: window.SmartTUI.mono },
-                    { title:'제품명', field:'product_name', minWidth:180 },
-                    { title:'Lot', field:'lot_no', width:120, html:(v,row)=>`<span class="stui-mono">${v}</span>` },
-                    { title:'유통기한', field:'expiry_date', width:160, html: expiryChip },
-                    { title:'현재고', field:'qty', align:'right', width:110, html:(v,row)=>`<span class="stui-mono">${Number(v).toLocaleString()}</span>` },
+                    { title:'위치', field:'org_name', width:150 },
+                    { title:'제품코드', field:'product_code', width:120 },
+                    { title:'제품명', field:'product_name', width:220 },
+                    { title:'Lot', field:'lot_no', width:120 },
+                    { title:'유통기한', field:'expiry_date', width:130 },
+                    { title:'잔여일', field:'expiry_days', editor:'number', width:90 },
+                    { title:'현재고', field:'qty', editor:'number', width:110 },
                 ],
             });
 
@@ -66,13 +67,6 @@
             document.getElementById('f-keyword').addEventListener('input',()=>{clearTimeout(t);t=setTimeout(()=>grid.refresh(),350);});
             const org=document.getElementById('f-org'); if(org) org.addEventListener('change',()=>grid.refresh());
         });
-
-        function expiryChip(d, row){
-            const days = row.expiry_days;
-            const tone = days < 30 ? 'crit' : (days < 90 ? 'warn' : 'ok');
-            const dtxt = days < 0 ? `D+${Math.abs(days)} 경과` : `D-${days}`;
-            return `<span class="stui-badge stui-${tone}" style="font-family:'IBM Plex Mono'">${d} · ${dtxt}</span>`;
-        }
     </script>
     @endpush
 </x-app-layout>

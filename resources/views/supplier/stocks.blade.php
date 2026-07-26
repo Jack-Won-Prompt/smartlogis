@@ -8,22 +8,22 @@
         </div>
     </x-filter-bar>
 
-    <x-grid-assets />
+    <x-ww-grid-assets />
     <div id="sup-grid" class="mt-4"></div>
 
     @push('scripts')
     <script>
         window.addEventListener('DOMContentLoaded', () => {
-            const grid = window.SmartTUI.create('#sup-grid', {
-                dataUrl:'{{ route('supplier.stocks.data') }}', readonly:true,
+            const grid = window.WWGrid.connect('#sup-grid', {
+                dataUrl:'{{ route('supplier.stocks.data') }}', readonly:true, screenName:'공급사재고',
                 params:()=>({ keyword:document.getElementById('f-keyword').value }),
                 columns:[
-                    { title:'병원', field:'hospital_name', minWidth:150 },
-                    { title:'제품코드', field:'product_code', width:120, html: window.SmartTUI.mono },
-                    { title:'제품명', field:'product_name', minWidth:180 },
-                    { title:'Lot', field:'lot_no', width:120, html:(v,row)=>`<span class="stui-mono">${v}</span>` },
-                    { title:'유통기한', field:'expiry_date', width:130, html:(v,row)=>`<span class="stui-mono">${v||'—'}</span>` },
-                    { title:'현재고', field:'qty', width:110, align:'right', html:(v,row)=>`<span class="stui-mono" style="font-weight:600">${Number(v).toLocaleString()}</span>` },
+                    { title:'병원', field:'hospital_name', width:160 },
+                    { title:'제품코드', field:'product_code', width:120 },
+                    { title:'제품명', field:'product_name', width:220 },
+                    { title:'Lot', field:'lot_no', width:120 },
+                    { title:'유통기한', field:'expiry_date', width:130 },
+                    { title:'현재고', field:'qty', editor:'number', width:110 },
                 ],
             });
             let t; document.getElementById('f-keyword').addEventListener('input',()=>{clearTimeout(t);t=setTimeout(()=>grid.refresh(),350);});

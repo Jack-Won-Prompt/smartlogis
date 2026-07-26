@@ -16,7 +16,7 @@
         </div>
     </x-filter-bar>
 
-    <x-grid-assets />
+    <x-ww-grid-assets />
     <div id="uh-grid" class="mt-4"></div>
 
     @push('scripts')
@@ -24,16 +24,16 @@
         window.addEventListener('DOMContentLoaded', () => {
             const tones={ DRAFT:'hold', SUBMITTED:'info', APPROVED:'ok', REJECTED:'crit' };
             function f(id){ return document.getElementById(id).value; }
-            const grid = window.SmartTUI.create('#uh-grid', {
-                dataUrl:'{{ route('usages.data') }}', readonly:true,
+            const grid = window.WWGrid.connect('#uh-grid', {
+                dataUrl:'{{ route('usages.data') }}', readonly:true, screenName:'사용분이력',
                 params:()=>({ keyword:f('f-keyword'), status:f('f-status') }),
                 columns:[
-                    { title:'사용분번호', field:'report_no', width:200, html: window.SmartTUI.mono },
-                    { title:'병원', field:'hospital_name', minWidth:140 },
-                    { title:'사용일', field:'usage_date', width:120, html:(v,row)=>`<span class="stui-mono">${v}</span>` },
-                    { title:'품목', field:'items_count', width:70, align:'right', html:(v,row)=>`<span class="stui-mono">${v}</span>` },
-                    { title:'금액', field:'total_amount', width:140, align:'right', html: window.SmartTUI.money },
-                    { title:'상태', field:'status', width:110, html:(v,row)=>`<span class="stui-badge stui-${tones[v]||'hold'}">${row.status_label}</span>` },
+                    { title:'사용분번호', field:'report_no', width:200 },
+                    { title:'병원', field:'hospital_name', width:150 },
+                    { title:'사용일', field:'usage_date', width:120 },
+                    { title:'품목', field:'items_count', editor:'number', width:80 },
+                    { title:'금액', field:'total_amount', editor:'number', width:150 },
+                    { title:'상태', field:'status_label', width:110 },
                 ],
             });
             let t;

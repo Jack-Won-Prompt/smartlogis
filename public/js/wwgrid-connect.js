@@ -33,7 +33,7 @@
     function mapColumns(cols, editable) {
         return cols.map((c) => {
             const col = { header: c.title, name: c.field, sortable: c.sortable !== false };
-            if (c.width) col.width = c.width;
+            if (c.width || c.minWidth) col.width = c.width || c.minWidth;
             if (c.align) col.align = c.align;
             const toOptions = (values) => Object.entries(values || {}).map(([value, label]) => ({ value: (value !== '' && !isNaN(value)) ? Number(value) : value, label: String(label) }));
             if (c.editor === 'list' && c.values) {
