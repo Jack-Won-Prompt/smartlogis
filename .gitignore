@@ -25,3 +25,7 @@ dash6.jpeg
 audit*.jpeg
 m-*.jpeg
 l12-*.jpeg
+
+# 로컬 소스/로그(배포 제외)
+/wwGrid
+laravel-*.log
