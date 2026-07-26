@@ -34,13 +34,20 @@
         .btn-amber{background-color:#f59e0b;color:#fff}
         .btn-amber:hover{background-color:#d97706}
     </style>
+    {{-- MDI 워크스페이스 iframe 안에서는 frame 파라미터가 유실돼도 사이드바/헤더를 숨긴다(이중 크롬 방지). --}}
+    <script>if (window.self !== window.top) document.documentElement.classList.add('is-framed');</script>
+    <style>
+        html.is-framed [data-app-aside], html.is-framed [data-app-header], html.is-framed [data-app-overlay] { display: none !important; }
+        html.is-framed [data-app-main] { padding-left: 0 !important; }
+        html.is-framed body { background: #fff !important; }
+    </style>
     @stack('head')
 </head>
 <body class="{{ $frame ? 'min-h-screen bg-white' : 'bg-surface-0' }} font-sans text-ink-700 antialiased" x-data="{ mobileNav: false }">
 
     @unless($frame)
     {{-- ── 사이드바 (232px, 고정 네이비) ─────────────────────────── --}}
-    <aside class="fixed inset-y-0 left-0 z-40 w-[232px] -translate-x-full bg-navy transition-transform duration-300 ease-brand lg:translate-x-0"
+    <aside data-app-aside class="fixed inset-y-0 left-0 z-40 w-[232px] -translate-x-full bg-navy transition-transform duration-300 ease-brand lg:translate-x-0"
            :class="mobileNav && '!translate-x-0'">
         <div class="flex h-14 items-center border-b border-white/5 px-5">
             {{-- 사이드바(솔리드 네이비) → 다크 전용 로고 직접 --}}
@@ -96,14 +103,14 @@
     </aside>
 
     {{-- 모바일 오버레이 --}}
-    <div x-show="mobileNav" x-cloak @click="mobileNav = false" class="fixed inset-0 z-30 bg-navy/50 backdrop-blur-sm lg:hidden"></div>
+    <div data-app-overlay x-show="mobileNav" x-cloak @click="mobileNav = false" class="fixed inset-0 z-30 bg-navy/50 backdrop-blur-sm lg:hidden"></div>
     @endunless
 
     {{-- ── 메인 영역 ─────────────────────────────────────────────── --}}
-    <div class="{{ $frame ? '' : 'lg:pl-[232px]' }}">
+    <div data-app-main class="{{ $frame ? '' : 'lg:pl-[232px]' }}">
         @unless($frame)
         {{-- 상단바 56px --}}
-        <header class="sticky top-0 z-20 flex h-14 items-center justify-between gap-4 border-b border-line bg-surface-1/80 px-4 backdrop-blur-xl sm:px-6">
+        <header data-app-header class="sticky top-0 z-20 flex h-14 items-center justify-between gap-4 border-b border-line bg-surface-1/80 px-4 backdrop-blur-xl sm:px-6">
             <div class="flex items-center gap-3">
                 <button @click="mobileNav = true" class="grid h-9 w-9 place-items-center rounded-lg text-ink-500 hover:bg-surface-2 lg:hidden">
                     <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
