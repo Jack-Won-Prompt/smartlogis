@@ -61,6 +61,12 @@
             const host = document.querySelector(selector);
             const editable = !readonly;
 
+            // 그리드가 남은 뷰포트 높이를 채우도록 계산(페이지 스크롤 대신 그리드 내부만 스크롤).
+            function fitHeight() {
+                const top = host.getBoundingClientRect().top;
+                return Math.max(300, Math.floor(global.innerHeight - top - 88));
+            }
+
             const grid = new global.wwGrid({
                 el: host,
                 rowKey,
@@ -70,9 +76,16 @@
                 toolbar: false, // 엑셀/추가/삭제 등은 외부 버튼으로 연동
                 footer: { total: true, selected: !readonly, modified: !readonly },
                 summary,
-                height: height || 560,
+                height: height || fitHeight(),
                 columns: mapColumns(columns, editable),
             });
+
+            // 창 크기 변화 시 높이 재조정(height 를 명시하지 않은 경우만 자동).
+            if (!height) {
+                const applyHeight = () => { if (grid._wrapEl) grid._wrapEl.style.maxHeight = fitHeight() + 'px'; };
+                global.addEventListener('resize', applyHeight);
+                setTimeout(applyHeight, 0);
+            }
 
             function load() {
                 const qs = new URLSearchParams(Object.assign({ size: cap }, cleanParams(params())));
