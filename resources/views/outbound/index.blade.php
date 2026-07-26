@@ -28,7 +28,7 @@
         </button>
     </div>
 
-    <x-grid-assets />
+    <x-ww-grid-assets />
     <div id="ob-grid"></div>
 
     {{-- 생성 슬라이드오버 --}}
@@ -93,19 +93,17 @@
         window.addEventListener('DOMContentLoaded', () => {
             const tones = { DRAFT:'hold', APPROVED:'ok', PICKING:'info', SHIPPED:'info', DELIVERED:'ok', CANCELED:'hold' };
             function f(id){ return document.getElementById(id).value; }
-            obGrid = window.SmartTUI.create('#ob-grid', {
-                dataUrl: '{{ route('outbounds.data') }}', readonly:true,
-                onRowClick:(row,ev)=>{ const b=ev.nativeEvent.target.closest('[data-act]'); if(b) advance(row.id, b.dataset.act); },
+            obGrid = window.WWGrid.connect('#ob-grid', {
+                dataUrl: '{{ route('outbounds.data') }}', readonly:true, screenName:'출고지시',
+                onRowClick:(row)=>{ const map={ APPROVED:'pick', PICKING:'ship', SHIPPED:'deliver' }; const a=map[row.status]; if(a) advance(row.id, a); else window.toast('진행할 다음 단계가 없습니다.','info'); },
                 params: () => ({ keyword:f('f-keyword'), status:f('f-status') }),
                 columns: [
-                    { title:'출고번호', field:'outbound_no', width:170, html: window.SmartTUI.mono },
-                    { title:'창고', field:'warehouse_name', minWidth:130 },
-                    { title:'병원', field:'hospital_name', minWidth:130 },
+                    { title:'출고번호', field:'outbound_no', width:170 },
+                    { title:'창고', field:'warehouse_name', width:140 },
+                    { title:'병원', field:'hospital_name', width:140 },
                     { title:'구분', field:'source_label', width:90 },
-                    { title:'품목', field:'items_count', width:70, align:'right', html:(v,row)=>`<span class="stui-mono">${v}</span>` },
-                    { title:'상태', field:'status', width:100, html:(v,row)=>`<span class="stui-badge stui-${tones[v]||'hold'}">${row.status_label}</span>` },
-                    { title:'처리', field:'_act', width:110, headerSort:false, align:'right', html: actionBtn,
-                      cellClick:(e,cell)=>{ const b=e.target.closest('[data-act]'); if(b) advance(cell.getData().id, b.dataset.act); } },
+                    { title:'품목', field:'items_count', editor:'number', width:80 },
+                    { title:'상태', field:'status_label', width:100 },
                 ],
             });
             let t;
@@ -113,13 +111,6 @@
             document.getElementById('f-status').addEventListener('change',()=>obGrid.refresh());
         });
 
-        function actionBtn(v, row){
-            const s = row.status; // 행의 status 로 처리 버튼 판정
-            const map = { APPROVED:['pick','피킹'], PICKING:['ship','배송'], SHIPPED:['deliver','완료'] };
-            const a = map[s];
-            if(!a) return '<span style="color:#93a4b6;font-size:12px">—</span>';
-            return `<span data-act="${a[0]}" class="stui-act" style="width:auto;padding:3px 12px;color:#fff;background:#2551c4;border-radius:8px;font-size:12px;font-weight:600">${a[1]} ▸</span>`;
-        }
         async function advance(id, act){
             const labels = { pick:'FEFO 피킹', ship:'배송 시작', deliver:'배송 완료' };
             const ok = await window.confirmDialog({ title: labels[act], message:`${labels[act]} 처리할까요?`, tone:'brand', confirmText:'확인' });

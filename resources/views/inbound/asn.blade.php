@@ -28,7 +28,7 @@
         </button>
     </div>
 
-    <x-grid-assets />
+    <x-ww-grid-assets />
     <div id="asn-grid"></div>
 
     {{-- 등록 슬라이드오버 --}}
@@ -106,16 +106,16 @@
         window.addEventListener('DOMContentLoaded', () => {
             const statusTones = { PLANNED:'hold', RECEIVING:'info', CONFIRMED:'ok', CANCELED:'hold' };
             function f(id){ return document.getElementById(id).value; }
-            asnGrid = window.SmartTUI.create('#asn-grid', {
-                dataUrl: '{{ route('inbounds.data') }}', readonly:true,
+            asnGrid = window.WWGrid.connect('#asn-grid', {
+                dataUrl: '{{ route('inbounds.data') }}', readonly:true, screenName:'입고예정ASN',
                 params: () => ({ keyword:f('f-keyword'), status:f('f-status') }),
                 columns: [
-                    { title:'입고번호', field:'inbound_no', width:170, html: window.SmartTUI.mono },
-                    { title:'공급사', field:'from_name', minWidth:140 },
-                    { title:'입고창고', field:'to_name', minWidth:140 },
-                    { title:'예정일', field:'planned_date', width:120, html:(v,row)=>`<span class="stui-mono">${v||''}</span>` },
-                    { title:'품목', field:'items_count', width:80, align:'right', html:(v,row)=>`<span class="stui-mono">${v}</span>` },
-                    { title:'상태', field:'status', width:110, html:(v,row)=>{const v=v;return `<span class="stui-badge stui-${statusTones[v]||'hold'}">${row.status_label}</span>`;} },
+                    { title:'입고번호', field:'inbound_no', width:170 },
+                    { title:'공급사', field:'from_name', width:150 },
+                    { title:'입고창고', field:'to_name', width:150 },
+                    { title:'예정일', field:'planned_date', width:120 },
+                    { title:'품목', field:'items_count', editor:'number', width:80 },
+                    { title:'상태', field:'status_label', width:110 },
                 ],
             });
             let t;
