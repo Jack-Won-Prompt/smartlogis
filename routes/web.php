@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Http\Controllers\Admin\AccessLogController;
 use App\Http\Controllers\Admin\AuditLogController;
 use App\Http\Controllers\Admin\SystemController;
 use App\Http\Controllers\BarcodeController;
@@ -164,6 +165,10 @@ Route::middleware('auth')->group(function () {
     Route::middleware('role:HQ')->prefix('admin')->name('admin.')->group(function () {
         Route::get('/audit-logs', [AuditLogController::class, 'index'])->name('audit-logs');
         Route::get('/audit-logs/data', [AuditLogController::class, 'data'])->name('audit-logs.data');
+
+        // 접속/페이지 접근 로그
+        Route::get('/access-logs', [AccessLogController::class, 'index'])->name('access-logs');
+        Route::get('/access-logs/data', [AccessLogController::class, 'data'])->name('access-logs.data');
 
         // 업무 데이터 초기화(위험) — 대시보드에서 호출
         Route::post('/reset-data', [SystemController::class, 'resetData'])->name('reset-data');

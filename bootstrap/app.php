@@ -37,6 +37,9 @@ return Application::configure(basePath: dirname(__DIR__))
             'role' => EnsureRole::class,
             'api.token' => AuthenticateApiToken::class,
         ]);
+
+        // 접속/페이지 접근 로그(메인·게스트 포함 모든 웹 GET 페이지)
+        $middleware->web(append: [\App\Http\Middleware\LogAccess::class]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
         //

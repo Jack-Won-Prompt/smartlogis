@@ -52,6 +52,7 @@ return [
         ['관리', 'shield', [
             ['알림 센터', 'notifications.index', []],
             ['감사 로그', 'admin.audit-logs', [OrgType::HQ]],
+            ['접속 로그', 'admin.access-logs', [OrgType::HQ]],
         ]],
     ],
 
