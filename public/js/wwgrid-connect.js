@@ -80,11 +80,17 @@
                 columns: mapColumns(columns, editable),
             });
 
-            // 창 크기 변화 시 높이 재조정(height 를 명시하지 않은 경우만 자동).
+            // 그리드가 항상 남은 뷰포트를 꽉 채우도록 고정 높이 지정(행이 적어도 하단 공백 없음).
+            // 행이 많으면 내부 스크롤. 창 크기 변화에도 재조정.
             if (!height) {
-                const applyHeight = () => { if (grid._wrapEl) grid._wrapEl.style.maxHeight = fitHeight() + 'px'; };
+                const applyHeight = () => {
+                    if (!grid._wrapEl) return;
+                    const h = fitHeight() + 'px';
+                    grid._wrapEl.style.height = h;
+                    grid._wrapEl.style.maxHeight = h;
+                };
+                applyHeight();
                 global.addEventListener('resize', applyHeight);
-                setTimeout(applyHeight, 0);
             }
 
             function load() {
