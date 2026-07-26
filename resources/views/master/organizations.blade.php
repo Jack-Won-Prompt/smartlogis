@@ -33,7 +33,7 @@
             note="양식을 내려받아 작성 후 업로드하세요. 코드가 같으면 갱신됩니다."
             params="{ keyword: document.getElementById('f-keyword').value, org_type: document.getElementById('f-type').value, is_active: document.getElementById('f-active').value }" />
         <div class="flex items-center gap-2">
-            <button id="btn-save" class="inline-flex items-center gap-1.5 rounded-lg bg-amber-500 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-amber-600" data-magnetic>
+            <button id="btn-save" class="btn-amber inline-flex items-center gap-1.5 rounded-lg px-4 py-2 text-sm font-semibold shadow-sm transition-colors" data-magnetic>
                 <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg> 저장
             </button>
             <button id="btn-reset" class="rounded-lg border border-line bg-surface-1 px-4 py-2 text-sm font-medium text-ink-600 hover:bg-surface-0">변경 취소</button>

@@ -29,6 +29,11 @@
     <title>{{ $title ?? '관제' }} · SmartLogis</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @livewireStyles
+    {{-- Tailwind 빌드에 포함되지 않는 색(런타임 추가 버튼) 안전 정의 — 빌드 재생성 없이 동작 --}}
+    <style>
+        .btn-amber{background-color:#f59e0b;color:#fff}
+        .btn-amber:hover{background-color:#d97706}
+    </style>
     @stack('head')
 </head>
 <body class="{{ $frame ? 'min-h-screen bg-white' : 'bg-surface-0' }} font-sans text-ink-700 antialiased" x-data="{ mobileNav: false }">
