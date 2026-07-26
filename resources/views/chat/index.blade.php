@@ -115,18 +115,21 @@
                     <button @click="replyTo=null" class="text-ink-400 hover:text-ink-700">✕</button>
                 </div>
 
-                <form @submit.prevent="send()" class="flex items-end gap-2 border-t border-line bg-white px-4 py-3">
+                <form @submit.prevent="send()" @paste="onPaste($event)" class="flex items-end gap-2 border-t border-line bg-white px-4 py-3">
                     <label class="grid h-10 w-10 shrink-0 cursor-pointer place-items-center rounded-lg text-ink-400 hover:bg-surface-2" title="파일 첨부">
                         <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05 12.25 20.24a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
                         <input type="file" multiple class="hidden" x-ref="files" @change="onFiles()">
                     </label>
                     <div class="min-w-0 flex-1">
-                        <div x-show="fileNames.length" x-cloak class="mb-1 flex flex-wrap gap-1">
-                            <template x-for="(n,i) in fileNames" :key="i">
-                                <span class="inline-flex items-center gap-1 rounded bg-surface-2 px-2 py-0.5 text-[11px] text-ink-600">📎 <span x-text="n"></span></span>
+                        <div x-show="pendingFiles.length" x-cloak class="mb-1 flex flex-wrap gap-1">
+                            <template x-for="(f,i) in pendingFiles" :key="i">
+                                <span class="inline-flex items-center gap-1 rounded bg-surface-2 px-2 py-0.5 text-[11px] text-ink-600">
+                                    📎 <span x-text="f.name || '이미지'"></span>
+                                    <button type="button" @click="pendingFiles.splice(i,1)" class="text-ink-400 hover:text-crit-600">✕</button>
+                                </span>
                             </template>
                         </div>
-                        <textarea x-ref="body" x-model="body" rows="1" placeholder="메시지를 입력하세요 (Enter 전송, Shift+Enter 줄바꿈)"
+                        <textarea x-ref="body" x-model="body" rows="1" placeholder="메시지 입력 (Enter 전송, Shift+Enter 줄바꿈, 이미지 붙여넣기 지원)"
                                   @keydown.enter="if(!$event.shiftKey){$event.preventDefault(); send();}"
                                   class="block w-full resize-none rounded-xl border-line bg-surface-1 px-3 py-2 text-sm focus:border-brand-500 focus:ring-2 focus:ring-brand-400/25"></textarea>
                     </div>
@@ -198,15 +201,27 @@
             return {
                 meId: cfg.meId, activeId: cfg.activeId, ui: null,
                 q: '', results: [], picked: [], groupName: '',
-                body: '', fileNames: [], replyTo: null,
+                body: '', pendingFiles: [], replyTo: null,
                 othersRead: cfg.othersReadInit || false,
                 pusher: null,
 
                 init() {
                     this.scrollBottom();
                     this.setupPusher(cfg.pusherKey, cfg.pusherCluster, cfg.convChannels || []);
-                    // 입력창 자동 높이
                     this.$watch('body', () => this.autoGrow());
+                    // 메시지 액션(답장/수정/삭제) 이벤트 위임 — 서버 렌더 + 동적 추가 메시지 모두 동작
+                    const list = this.$refs.msgList;
+                    if (list) list.addEventListener('click', (e) => {
+                        const btn = e.target.closest('[data-act]');
+                        if (!btn) return;
+                        const wrap = btn.closest('[data-msg]');
+                        if (!wrap) return;
+                        const id = parseInt(wrap.dataset.msg, 10);
+                        const act = btn.dataset.act;
+                        if (act === 'reply') this.setReply(id, wrap.dataset.sender || '', (wrap.querySelector('[data-body]')?.textContent || wrap.dataset.file || '').trim());
+                        else if (act === 'edit') this.editMsg(id);
+                        else if (act === 'delete') this.delMsg(id);
+                    });
                 },
                 autoGrow() {
                     const el = this.$refs.body;
@@ -256,9 +271,10 @@
                     const el = document.querySelector('[data-msg="' + d.id + '"] [data-body]');
                     if (el) { el.textContent = d.body; const tag = el.parentElement.querySelector('[data-edited]'); if (tag) tag.classList.remove('hidden'); }
                 },
-                onDeleted(d) {
-                    const wrap = document.querySelector('[data-msg="' + d.id + '"] [data-bubble]');
-                    if (wrap) wrap.innerHTML = '<span class="italic text-ink-300 text-sm">삭제된 메시지</span>';
+                onDeleted(d) { this.markDeleted(d.id); },
+                markDeleted(id) {
+                    const bubble = document.querySelector('[data-msg="' + id + '"] [data-bubble]');
+                    if (bubble) bubble.innerHTML = '<span class="text-sm italic text-ink-300">삭제된 메시지</span>';
                 },
 
                 appendMessage(d) {
@@ -266,11 +282,13 @@
                     const list = this.$refs.msgList;
                     const wrap = document.createElement('div');
                     wrap.setAttribute('data-msg', d.id);
-                    wrap.className = 'flex ' + (mine ? 'justify-end' : 'justify-start');
+                    wrap.setAttribute('data-sender', d.sender_name || '');
+                    wrap.setAttribute('data-file', d.file_name || '');
+                    wrap.className = 'group relative flex ' + (mine ? 'justify-end' : 'justify-start');
                     let inner = '';
-                    if (!mine) inner += '<span class="mr-2 mt-1 grid h-7 w-7 shrink-0 place-items-center self-end rounded-full bg-brand-gradient text-[10px] font-bold text-white">' + (d.sender_name||'?')[0] + '</span>';
-                    let bubble = '<div data-bubble class="rounded-2xl px-3 py-2 text-sm ' + (mine ? 'bg-brand-600 text-white' : 'bg-white border border-line text-ink-800') + '">';
-                    if (!mine) bubble += '<div class="mb-0.5 text-[11px] font-semibold ' + (mine?'text-white/80':'text-brand-600') + '">' + this.esc(d.sender_name||'') + '</div>';
+                    if (!mine) inner += '<span class="mr-2 mt-1 grid h-7 w-7 shrink-0 place-items-center self-end rounded-full bg-brand-gradient text-[10px] font-bold text-white">' + this.esc((d.sender_name||'?')[0]) + '</span>';
+                    let bubble = '<div data-bubble class="relative rounded-2xl px-3 py-2 text-sm ' + (mine ? 'bg-brand-600 text-white' : 'bg-white border border-line text-ink-800') + '">';
+                    if (!mine) bubble += '<div class="mb-0.5 text-[11px] font-semibold text-brand-600">' + this.esc(d.sender_name||'') + '</div>';
                     if (d.reply_to) bubble += '<div class="mb-1 rounded bg-black/5 px-2 py-1 text-[11px] opacity-80"><b>' + this.esc(d.reply_to.sender_name||'') + '</b> ' + this.esc((d.reply_to.body||'').slice(0,60)) + '</div>';
                     if (d.file_url) {
                         bubble += d.is_image
@@ -278,6 +296,12 @@
                             : '<a href="'+d.file_url+'" target="_blank" class="flex items-center gap-1 underline">📎 '+this.esc(d.file_name||'파일')+'</a>';
                     }
                     if (d.body) bubble += '<div data-body class="whitespace-pre-wrap break-words">' + this.esc(d.body) + '</div>';
+                    bubble += '<span data-edited class="hidden ml-1 text-[10px] ' + (mine?'text-white/60':'text-ink-300') + '">(수정됨)</span>';
+                    // 액션 바(답장/수정/삭제) — 위임으로 처리
+                    bubble += '<div class="absolute -top-3 right-1 z-10 hidden items-center gap-0.5 rounded-lg border border-line bg-white p-0.5 shadow-sm group-hover:flex">'
+                        + '<button type="button" data-act="reply" class="grid h-6 w-6 place-items-center rounded text-ink-400 hover:bg-surface-2" title="답장">↩</button>'
+                        + (mine ? '<button type="button" data-act="edit" class="grid h-6 w-6 place-items-center rounded text-ink-400 hover:bg-surface-2" title="수정">✎</button><button type="button" data-act="delete" class="grid h-6 w-6 place-items-center rounded text-crit-500 hover:bg-crit-100" title="삭제">🗑</button>' : '')
+                        + '</div>';
                     bubble += '</div>';
                     inner += '<div class="max-w-[70%]">' + bubble + '<div class="mt-0.5 text-[10px] text-ink-300 ' + (mine?'text-right':'') + '">' + this.time(d.created_at) + '</div></div>';
                     wrap.innerHTML = inner;
@@ -297,16 +321,16 @@
                 // 메시지 전송
                 async send() {
                     const text = this.body.trim();
-                    const files = this.$refs.files?.files;
-                    if (!text && (!files || !files.length)) return;
+                    if (!text && !this.pendingFiles.length) return;
                     const fd = new FormData();
                     if (text) fd.append('body', text);
                     if (this.replyTo) fd.append('reply_to_id', this.replyTo.id);
-                    if (files) for (const f of files) fd.append('files[]', f);
-                    this.body = ''; this.fileNames = []; if (this.$refs.files) this.$refs.files.value = ''; this.replyTo = null;
+                    this.pendingFiles.forEach((f, i) => fd.append('files[]', f, f.name || ('paste-' + Date.now() + '-' + i + '.png')));
+                    this.body = ''; this.pendingFiles = []; this.replyTo = null;
                     const res = await fetch('{{ $conversation ? route('chat.reply', $conversation) : '' }}', {
                         method: 'POST', headers: { 'X-CSRF-TOKEN': this.csrf(), 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }, body: fd,
                     });
+                    if (!res.ok) { if (window.toast) window.toast('전송에 실패했습니다.', 'crit'); return; }
                     // 전송 응답으로 즉시 표시(Pusher 배달과 무관). Pusher echo 는 id 중복제거로 무시됨.
                     const data = await res.json().catch(() => null);
                     (data?.messages || []).forEach((m) => { if (!document.querySelector('[data-msg="' + m.id + '"]')) { this.appendMessage(m); this.bumpList(m); } });
@@ -314,7 +338,20 @@
                     this.scrollBottom();
                     this.autoGrow();
                 },
-                onFiles() { this.fileNames = Array.from(this.$refs.files.files).map(f => f.name); },
+                onFiles() {
+                    const fs = this.$refs.files?.files || [];
+                    for (const f of fs) this.pendingFiles.push(f);
+                    if (this.$refs.files) this.$refs.files.value = ''; // 같은 파일 재선택 허용
+                },
+                // 클립보드 붙여넣기(Ctrl+V) 로 이미지/파일 첨부
+                onPaste(e) {
+                    const items = (e.clipboardData && e.clipboardData.items) || [];
+                    let added = 0;
+                    for (const it of items) {
+                        if (it.kind === 'file') { const f = it.getAsFile(); if (f) { this.pendingFiles.push(f); added++; } }
+                    }
+                    if (added) { e.preventDefault(); if (window.toast) window.toast(added + '개 파일을 첨부했습니다. 전송을 누르세요.', 'info'); }
+                },
                 setReply(id, name, body) { this.replyTo = { id, name, body }; this.$refs.body?.focus(); },
 
                 async markRead() {
@@ -349,7 +386,9 @@
                 },
                 async delMsg(id) {
                     if (!await window.confirmDialog({ title:'메시지 삭제', message:'이 메시지를 삭제할까요?', tone:'crit', confirmText:'삭제' })) return;
-                    await fetch('{{ url('/chat/messages') }}/'+id, { method:'DELETE', headers:{'X-CSRF-TOKEN':this.csrf(),'Accept':'application/json'} });
+                    const r = await fetch('{{ url('/chat/messages') }}/'+id, { method:'DELETE', headers:{'X-CSRF-TOKEN':this.csrf(),'Accept':'application/json'} });
+                    if (r.ok) this.markDeleted(id);   // 즉시 반영(Pusher echo 는 중복 무해)
+                    else if (window.toast) window.toast('삭제에 실패했습니다.', 'crit');
                 },
                 leave() {
                     window.confirmDialog({ title:'채팅 나가기', message:'이 대화에서 나갈까요?', tone:'crit', confirmText:'나가기' }).then(ok => { if(ok) this.$refs.leaveForm.submit ? this.$refs.leaveForm.removeAttribute('onsubmit') || this.$refs.leaveForm.submit() : null; });

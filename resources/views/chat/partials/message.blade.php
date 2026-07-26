@@ -2,7 +2,7 @@
     /** @var \App\Models\Message $m */
     $mine = (int) $m->sender_id === (int) $meId;
 @endphp
-<div data-msg="{{ $m->id }}" class="group flex {{ $mine ? 'justify-end' : 'justify-start' }}">
+<div data-msg="{{ $m->id }}" data-sender="{{ $m->sender?->name }}" data-file="{{ $m->file_name }}" class="group relative flex {{ $mine ? 'justify-end' : 'justify-start' }}">
     @unless($mine)
         <span class="mr-2 mt-1 grid h-7 w-7 shrink-0 place-items-center self-end rounded-full bg-brand-gradient text-[10px] font-bold text-white">{{ mb_substr($m->sender?->name ?? '?', 0, 1) }}</span>
     @endunless
@@ -29,15 +29,13 @@
                 @endif
                 <span data-edited class="{{ $m->isEdited() ? '' : 'hidden' }} ml-1 text-[10px] {{ $mine ? 'text-white/60' : 'text-ink-300' }}">(수정됨)</span>
 
-                {{-- 본인 메시지: 답장/수정/삭제 --}}
-                <div class="pointer-events-none absolute -top-3 {{ $mine ? 'left-0 -translate-x-full pr-1' : 'right-0 translate-x-full pl-1' }} opacity-0 transition-opacity group-hover:pointer-events-auto group-hover:opacity-100">
-                    <div class="flex items-center gap-0.5 rounded-lg border border-line bg-white p-0.5 shadow-sm">
-                        <button @click="setReply({{ $m->id }}, @js($m->sender?->name), @js(\Illuminate\Support\Str::limit($m->body ?: $m->file_name, 60)))" class="grid h-6 w-6 place-items-center rounded text-ink-400 hover:bg-surface-2" title="답장">↩</button>
-                        @if($mine)
-                            <button @click="editMsg({{ $m->id }})" class="grid h-6 w-6 place-items-center rounded text-ink-400 hover:bg-surface-2" title="수정">✎</button>
-                            <button @click="delMsg({{ $m->id }})" class="grid h-6 w-6 place-items-center rounded text-crit-500 hover:bg-crit-100" title="삭제">🗑</button>
-                        @endif
-                    </div>
+                {{-- 답장/수정/삭제 — 클릭은 msgList 이벤트 위임으로 처리(동적 추가 메시지도 동작) --}}
+                <div class="absolute -top-3 right-1 z-10 hidden items-center gap-0.5 rounded-lg border border-line bg-white p-0.5 shadow-sm group-hover:flex">
+                    <button type="button" data-act="reply" class="grid h-6 w-6 place-items-center rounded text-ink-400 hover:bg-surface-2" title="답장">↩</button>
+                    @if($mine)
+                        <button type="button" data-act="edit" class="grid h-6 w-6 place-items-center rounded text-ink-400 hover:bg-surface-2" title="수정">✎</button>
+                        <button type="button" data-act="delete" class="grid h-6 w-6 place-items-center rounded text-crit-500 hover:bg-crit-100" title="삭제">🗑</button>
+                    @endif
                 </div>
             @endif
         </div>
