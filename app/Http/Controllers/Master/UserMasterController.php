@@ -208,7 +208,7 @@ class UserMasterController extends Controller
     {
         $request->validate(['file' => ['required', 'file', 'mimes:xlsx,xls,csv']], [], ['file' => '엑셀 파일']);
         $import = new UsersImport;
-        Excel::import($import, $request->file('file')->getRealPath());
+        Excel::import($import, $request->file('file'));
         $report = $import->report();
 
         $failKey = null;
