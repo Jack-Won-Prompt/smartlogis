@@ -14,6 +14,9 @@ return [
         ['대시보드', 'grid', [
             ['대시보드', 'dashboard', []],
         ]],
+        ['소통', 'chat', [
+            ['채팅', 'chat.index', []],
+        ]],
         ['기준정보', 'layers', [
             ['제품 마스터', 'master.products', [OrgType::HQ]],
             ['거래처', 'master.organizations', [OrgType::HQ]],
@@ -54,6 +57,7 @@ return [
 
     'icons' => [
         'grid' => 'M3 3h7v7H3zM14 3h7v7h-7zM14 14h7v7h-7zM3 14h7v7H3z',
+        'chat' => 'M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z',
         'layers' => 'm12 2 9 5-9 5-9-5 9-5ZM3 12l9 5 9-5M3 17l9 5 9-5',
         'box' => 'm12 3 8 4.5v9L12 21l-8-4.5v-9L12 3ZM12 12 4 7.5M12 12l8-4.5M12 12v9',
         'truck' => 'M1 3h15v13H1zM16 8h4l3 3v5h-7M5.5 19a2 2 0 1 0 0-4 2 2 0 0 0 0 4ZM18.5 19a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z',

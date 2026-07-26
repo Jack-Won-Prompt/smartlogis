@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Http\Controllers\Admin\AuditLogController;
 use App\Http\Controllers\Admin\SystemController;
 use App\Http\Controllers\BarcodeController;
+use App\Http\Controllers\ChatController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\Inbound\InboundController;
 use App\Http\Controllers\Inventory\ExpiryController;
@@ -53,6 +54,20 @@ Route::middleware('auth')->group(function () {
 
     // 알림 센터
     Route::view('/notifications', 'notifications.index')->name('notifications.index');
+
+    // 채팅(전 사용자) — 어떤 사용자든 검색해 대화 시작. 실시간은 Pusher 브로드캐스트.
+    Route::controller(ChatController::class)->group(function () {
+        Route::get('/chat', 'index')->name('chat.index');
+        Route::get('/chat/users', 'userSearch')->name('chat.users');   // {conversation} 보다 먼저
+        Route::post('/chat', 'store')->name('chat.store');
+        Route::post('/chat/group', 'storeGroup')->name('chat.group');
+        Route::get('/chat/{conversation}', 'show')->name('chat.show');
+        Route::post('/chat/{conversation}/reply', 'reply')->name('chat.reply');
+        Route::post('/chat/{conversation}/invite', 'invite')->name('chat.invite');
+        Route::delete('/chat/{conversation}/leave', 'leave')->name('chat.leave');
+        Route::patch('/chat/messages/{message}', 'update')->name('chat.messages.update');
+        Route::delete('/chat/messages/{message}', 'destroy')->name('chat.messages.destroy');
+    });
 
     // 재고 — 본사/창고/병원
     Route::middleware('role:HQ,WAREHOUSE,HOSPITAL')->prefix('inventory')->name('inventory.')->group(function () {

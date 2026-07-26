@@ -1,0 +1,332 @@
+@php
+    use Illuminate\Support\Facades\Route;
+    $me = auth()->user();
+    $meId = (int) $me->id;
+    $pusherKey = config('broadcasting.connections.pusher.key');
+    $pusherCluster = config('broadcasting.connections.pusher.options.cluster');
+    // 초기 대화 메시지(활성 대화가 있으면)
+    $activeId = $conversation?->id;
+@endphp
+
+<x-app-layout title="채팅" breadcrumb="채팅">
+    @push('head')
+        <script src="https://js.pusher.com/8.2.0/pusher.min.js"></script>
+    @endpush
+
+    <div class="flex h-[calc(100vh-8.5rem)] overflow-hidden rounded-2xl border border-line bg-white shadow-sm"
+         x-data="chatApp({
+            meId: {{ $meId }},
+            activeId: {{ $activeId ?? 'null' }},
+            pusherKey: @js($pusherKey),
+            pusherCluster: @js($pusherCluster),
+            convChannels: @js($conversations->pluck('id')),
+         })" x-init="init()">
+
+        {{-- ── 좌: 대화 목록 ─────────────────────────────── --}}
+        <aside class="flex w-72 shrink-0 flex-col border-r border-line">
+            <div class="flex items-center justify-between gap-2 border-b border-line px-4 py-3">
+                <h2 class="text-sm font-bold text-ink-900">대화</h2>
+                <div class="flex gap-1">
+                    <button @click="openUserSearch()" title="새 대화" class="grid h-8 w-8 place-items-center rounded-lg text-brand-600 hover:bg-brand-50">
+                        <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+                    </button>
+                    <button @click="openGroup()" title="그룹 만들기" class="grid h-8 w-8 place-items-center rounded-lg text-ink-500 hover:bg-surface-2">
+                        <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8ZM23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                    </button>
+                </div>
+            </div>
+            <div class="min-h-0 flex-1 overflow-y-auto">
+                @forelse($conversations as $c)
+                    @php $unread = $c->unreadCount($meId); $last = $c->lastMessage; @endphp
+                    <a href="{{ route('chat.show', $c) }}"
+                       data-conv="{{ $c->id }}"
+                       class="flex items-center gap-3 border-b border-line/60 px-4 py-3 transition-colors hover:bg-surface-1 {{ $activeId === $c->id ? 'bg-brand-50' : '' }}">
+                        <span class="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-brand-gradient text-sm font-bold text-white">
+                            {{ mb_substr($c->displayName($meId), 0, 1) }}
+                        </span>
+                        <span class="min-w-0 flex-1">
+                            <span class="flex items-center justify-between gap-2">
+                                <span class="truncate text-sm font-semibold text-ink-900">{{ $c->displayName($meId) }}{{ $c->is_group ? ' ('.($c->participants->count()).')' : '' }}</span>
+                                <span class="shrink-0 text-[11px] text-ink-300">{{ optional($last?->created_at)->timezone('Asia/Seoul')?->format('m/d H:i') }}</span>
+                            </span>
+                            <span class="mt-0.5 flex items-center justify-between gap-2">
+                                <span class="truncate text-xs text-ink-400">{{ $last ? ($last->isDeleted() ? '(삭제된 메시지)' : ($last->body ?: ($last->file_name ? '📎 '.$last->file_name : ''))) : '대화를 시작하세요' }}</span>
+                                <span data-unread="{{ $c->id }}" class="shrink-0 rounded-full bg-brand-500 px-1.5 text-[10px] font-bold text-white {{ $unread ? '' : 'hidden' }}">{{ $unread ?: '' }}</span>
+                            </span>
+                        </span>
+                    </a>
+                @empty
+                    <p class="px-4 py-10 text-center text-sm text-ink-300">대화가 없습니다.<br>+ 를 눌러 시작하세요.</p>
+                @endforelse
+            </div>
+        </aside>
+
+        {{-- ── 우: 대화 내용 ─────────────────────────────── --}}
+        <section class="flex min-w-0 flex-1 flex-col bg-surface-0">
+            @if($conversation)
+                <header class="flex items-center justify-between gap-3 border-b border-line bg-white px-5 py-3">
+                    <div class="min-w-0">
+                        <p class="truncate text-sm font-bold text-ink-900">{{ $conversation->displayName($meId) }}</p>
+                        <p class="truncate text-xs text-ink-400">
+                            @if($conversation->is_group)
+                                {{ $conversation->participants->pluck('name')->join(', ') }}
+                            @else
+                                {{ $conversation->otherParticipant($meId)?->role->label() }} · {{ $conversation->otherParticipant($meId)?->organization?->name }}
+                            @endif
+                        </p>
+                    </div>
+                    <div class="flex shrink-0 items-center gap-1">
+                        @if($conversation->is_group)
+                            <button @click="openInvite()" class="rounded-lg px-3 py-1.5 text-xs font-medium text-brand-600 hover:bg-brand-50">초대</button>
+                        @endif
+                        <form method="POST" action="{{ route('chat.leave', $conversation) }}" onsubmit="return false" x-ref="leaveForm">@csrf @method('DELETE')</form>
+                        <button @click="leave()" class="rounded-lg px-3 py-1.5 text-xs font-medium text-crit-600 hover:bg-crit-100">나가기</button>
+                    </div>
+                </header>
+
+                <div x-ref="msgList" class="min-h-0 flex-1 space-y-1 overflow-y-auto px-5 py-4">
+                    @foreach($conversation->messages as $m)
+                        @include('chat.partials.message', ['m' => $m, 'meId' => $meId])
+                    @endforeach
+                </div>
+
+                {{-- 답장 미리보기 --}}
+                <div x-show="replyTo" x-cloak class="flex items-center justify-between gap-2 border-t border-line bg-surface-1 px-5 py-2 text-xs">
+                    <span class="min-w-0 truncate text-ink-500"><b x-text="replyTo?.name"></b>: <span x-text="replyTo?.body"></span></span>
+                    <button @click="replyTo=null" class="text-ink-400 hover:text-ink-700">✕</button>
+                </div>
+
+                <form @submit.prevent="send()" class="flex items-end gap-2 border-t border-line bg-white px-4 py-3">
+                    <label class="grid h-10 w-10 shrink-0 cursor-pointer place-items-center rounded-lg text-ink-400 hover:bg-surface-2" title="파일 첨부">
+                        <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05 12.25 20.24a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+                        <input type="file" multiple class="hidden" x-ref="files" @change="onFiles()">
+                    </label>
+                    <div class="min-w-0 flex-1">
+                        <div x-show="fileNames.length" x-cloak class="mb-1 flex flex-wrap gap-1">
+                            <template x-for="(n,i) in fileNames" :key="i">
+                                <span class="inline-flex items-center gap-1 rounded bg-surface-2 px-2 py-0.5 text-[11px] text-ink-600">📎 <span x-text="n"></span></span>
+                            </template>
+                        </div>
+                        <textarea x-ref="body" x-model="body" rows="1" placeholder="메시지를 입력하세요 (Enter 전송, Shift+Enter 줄바꿈)"
+                                  @keydown.enter="if(!$event.shiftKey){$event.preventDefault(); send();}"
+                                  class="block w-full resize-none rounded-xl border-line bg-surface-1 px-3 py-2 text-sm focus:border-brand-500 focus:ring-2 focus:ring-brand-400/25"></textarea>
+                    </div>
+                    <button type="submit" class="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-brand-600 text-white hover:bg-brand-700" title="전송">
+                        <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>
+                    </button>
+                </form>
+            @else
+                <div class="flex h-full flex-col items-center justify-center gap-3 text-ink-300">
+                    <svg class="h-16 w-16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2Z"/></svg>
+                    <p class="text-sm">왼쪽에서 대화를 선택하거나 <b class="text-brand-600">+</b> 로 새 대화를 시작하세요.</p>
+                </div>
+            @endif
+        </section>
+
+        {{-- ── 사용자 검색 모달(새 1:1 대화) ─────────────── --}}
+        <div x-show="ui==='search'" x-cloak class="fixed inset-0 z-50 grid place-items-center bg-navy/40 p-4" @click.self="ui=null">
+            <div class="w-full max-w-md rounded-2xl bg-white p-5 shadow-lift">
+                <h3 class="mb-3 text-base font-bold text-ink-900">새 대화 — 사용자 검색</h3>
+                <input x-ref="usearch" x-model="q" @input.debounce.250ms="searchUsers()" placeholder="이름 / 이메일 / 아이디"
+                       class="w-full rounded-lg border-line bg-surface-1 px-3 py-2 text-sm focus:border-brand-500 focus:ring-2 focus:ring-brand-400/25">
+                <div class="mt-3 max-h-72 space-y-1 overflow-y-auto">
+                    <template x-for="u in results" :key="u.id">
+                        <button @click="startChat(u.id)" class="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left hover:bg-surface-1">
+                            <span class="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-brand-gradient text-xs font-bold text-white" x-text="u.name?.[0]"></span>
+                            <span class="min-w-0"><span class="block truncate text-sm font-semibold text-ink-900" x-text="u.name"></span><span class="block truncate text-xs text-ink-400"><span x-text="u.role"></span> · <span x-text="u.org"></span></span></span>
+                        </button>
+                    </template>
+                    <p x-show="!results.length" class="py-6 text-center text-sm text-ink-300">검색어를 입력하세요.</p>
+                </div>
+                <div class="mt-4 text-right"><button @click="ui=null" class="rounded-lg px-4 py-2 text-sm text-ink-500 hover:bg-surface-2">닫기</button></div>
+            </div>
+        </div>
+
+        {{-- ── 그룹 만들기 / 초대 모달 ────────────────────── --}}
+        <div x-show="ui==='group' || ui==='invite'" x-cloak class="fixed inset-0 z-50 grid place-items-center bg-navy/40 p-4" @click.self="ui=null">
+            <div class="w-full max-w-md rounded-2xl bg-white p-5 shadow-lift">
+                <h3 class="mb-3 text-base font-bold text-ink-900" x-text="ui==='group' ? '그룹 만들기' : '멤버 초대'"></h3>
+                <input x-show="ui==='group'" x-model="groupName" placeholder="그룹 이름" class="mb-2 w-full rounded-lg border-line bg-surface-1 px-3 py-2 text-sm focus:border-brand-500 focus:ring-2 focus:ring-brand-400/25">
+                <input x-model="q" @input.debounce.250ms="searchUsers()" placeholder="사용자 검색(이름/이메일/아이디)" class="w-full rounded-lg border-line bg-surface-1 px-3 py-2 text-sm focus:border-brand-500 focus:ring-2 focus:ring-brand-400/25">
+                <div x-show="picked.length" class="mt-2 flex flex-wrap gap-1">
+                    <template x-for="p in picked" :key="p.id">
+                        <span class="inline-flex items-center gap-1 rounded-full bg-brand-50 px-2 py-0.5 text-xs text-brand-700"><span x-text="p.name"></span><button @click="unpick(p.id)" class="text-brand-400">✕</button></span>
+                    </template>
+                </div>
+                <div class="mt-2 max-h-56 space-y-1 overflow-y-auto">
+                    <template x-for="u in results" :key="u.id">
+                        <button @click="pick(u)" class="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left hover:bg-surface-1">
+                            <span class="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-brand-gradient text-xs font-bold text-white" x-text="u.name?.[0]"></span>
+                            <span class="min-w-0"><span class="block truncate text-sm font-semibold text-ink-900" x-text="u.name"></span><span class="block truncate text-xs text-ink-400"><span x-text="u.role"></span> · <span x-text="u.org"></span></span></span>
+                        </button>
+                    </template>
+                </div>
+                <div class="mt-4 flex justify-end gap-2">
+                    <button @click="ui=null" class="rounded-lg px-4 py-2 text-sm text-ink-500 hover:bg-surface-2">취소</button>
+                    <button @click="ui==='group' ? createGroup() : doInvite()" class="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700" x-text="ui==='group' ? '만들기' : '초대'"></button>
+                </div>
+            </div>
+        </div>
+
+        {{-- 숨은 폼(1:1 시작 / 그룹 생성 서버 제출용) --}}
+        <form x-ref="startForm" method="POST" action="{{ route('chat.store') }}" class="hidden">@csrf<input type="hidden" name="receiver_id" x-ref="startReceiver"></form>
+        <form x-ref="groupForm" method="POST" action="{{ route('chat.group') }}" class="hidden">@csrf<input type="hidden" name="name" x-ref="groupNameInput"><div x-ref="groupMembers"></div></form>
+    </div>
+
+    @push('scripts')
+    <script>
+        window.chatApp = function (cfg) {
+            return {
+                meId: cfg.meId, activeId: cfg.activeId, ui: null,
+                q: '', results: [], picked: [], groupName: '',
+                body: '', fileNames: [], replyTo: null,
+                pusher: null,
+
+                init() {
+                    this.scrollBottom();
+                    this.setupPusher(cfg.pusherKey, cfg.pusherCluster, cfg.convChannels || []);
+                },
+                csrf() { return document.querySelector('meta[name=csrf-token]').content; },
+
+                setupPusher(key, cluster, convIds) {
+                    if (!key || !window.Pusher) return;
+                    this.pusher = new Pusher(key, {
+                        cluster: cluster,
+                        forceTLS: true,
+                        authEndpoint: '{{ url('/broadcasting/auth') }}',
+                        auth: { headers: { 'X-CSRF-TOKEN': this.csrf() } },
+                    });
+                    // 내 모든 대화방 구독(목록 실시간 갱신 + 활성방 메시지)
+                    (convIds || []).forEach((id) => {
+                        const ch = this.pusher.subscribe('private-conversation.' + id);
+                        ch.bind('message.sent', (d) => this.onMessage(d));
+                        ch.bind('message.updated', (d) => this.onUpdated(d));
+                        ch.bind('message.deleted', (d) => this.onDeleted(d));
+                    });
+                },
+
+                onMessage(d) {
+                    // 목록 사이드바 갱신
+                    this.bumpList(d);
+                    if (d.conversation_id !== this.activeId) return;
+                    if (document.querySelector('[data-msg="' + d.id + '"]')) return; // 중복 방지
+                    this.appendMessage(d);
+                    this.scrollBottom();
+                    if (d.sender_id !== this.meId) this.markRead();
+                },
+                onUpdated(d) {
+                    const el = document.querySelector('[data-msg="' + d.id + '"] [data-body]');
+                    if (el) { el.textContent = d.body; const tag = el.parentElement.querySelector('[data-edited]'); if (tag) tag.classList.remove('hidden'); }
+                },
+                onDeleted(d) {
+                    const wrap = document.querySelector('[data-msg="' + d.id + '"] [data-bubble]');
+                    if (wrap) wrap.innerHTML = '<span class="italic text-ink-300 text-sm">삭제된 메시지</span>';
+                },
+
+                appendMessage(d) {
+                    const mine = d.sender_id === this.meId;
+                    const list = this.$refs.msgList;
+                    const wrap = document.createElement('div');
+                    wrap.setAttribute('data-msg', d.id);
+                    wrap.className = 'flex ' + (mine ? 'justify-end' : 'justify-start');
+                    let inner = '';
+                    if (!mine) inner += '<span class="mr-2 mt-1 grid h-7 w-7 shrink-0 place-items-center self-end rounded-full bg-brand-gradient text-[10px] font-bold text-white">' + (d.sender_name||'?')[0] + '</span>';
+                    let bubble = '<div data-bubble class="rounded-2xl px-3 py-2 text-sm ' + (mine ? 'bg-brand-600 text-white' : 'bg-white border border-line text-ink-800') + '">';
+                    if (!mine) bubble += '<div class="mb-0.5 text-[11px] font-semibold ' + (mine?'text-white/80':'text-brand-600') + '">' + this.esc(d.sender_name||'') + '</div>';
+                    if (d.reply_to) bubble += '<div class="mb-1 rounded bg-black/5 px-2 py-1 text-[11px] opacity-80"><b>' + this.esc(d.reply_to.sender_name||'') + '</b> ' + this.esc((d.reply_to.body||'').slice(0,60)) + '</div>';
+                    if (d.file_url) {
+                        bubble += d.is_image
+                            ? '<a href="'+d.file_url+'" target="_blank"><img src="'+d.file_url+'" class="max-h-52 rounded-lg"></a>'
+                            : '<a href="'+d.file_url+'" target="_blank" class="flex items-center gap-1 underline">📎 '+this.esc(d.file_name||'파일')+'</a>';
+                    }
+                    if (d.body) bubble += '<div data-body class="whitespace-pre-wrap break-words">' + this.esc(d.body) + '</div>';
+                    bubble += '</div>';
+                    inner += '<div class="max-w-[70%]">' + bubble + '<div class="mt-0.5 text-[10px] text-ink-300 ' + (mine?'text-right':'') + '">' + this.time(d.created_at) + '</div></div>';
+                    wrap.innerHTML = inner;
+                    list.appendChild(wrap);
+                },
+
+                bumpList(d) {
+                    const link = document.querySelector('a[data-conv="' + d.conversation_id + '"]');
+                    if (!link) return;
+                    if (d.conversation_id !== this.activeId) {
+                        const badge = document.querySelector('[data-unread="' + d.conversation_id + '"]');
+                        if (badge && d.sender_id !== this.meId) { badge.textContent = (parseInt(badge.textContent||'0',10)||0)+1; badge.classList.remove('hidden'); }
+                    }
+                    link.parentElement.prepend(link); // 최근 대화 위로
+                },
+
+                // 메시지 전송
+                async send() {
+                    const text = this.body.trim();
+                    const files = this.$refs.files?.files;
+                    if (!text && (!files || !files.length)) return;
+                    const fd = new FormData();
+                    if (text) fd.append('body', text);
+                    if (this.replyTo) fd.append('reply_to_id', this.replyTo.id);
+                    if (files) for (const f of files) fd.append('files[]', f);
+                    this.body = ''; this.fileNames = []; if (this.$refs.files) this.$refs.files.value = ''; this.replyTo = null;
+                    const res = await fetch('{{ $conversation ? route('chat.reply', $conversation) : '' }}', {
+                        method: 'POST', headers: { 'X-CSRF-TOKEN': this.csrf(), 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }, body: fd,
+                    });
+                    // 전송 응답으로 즉시 표시(Pusher 배달과 무관). Pusher echo 는 id 중복제거로 무시됨.
+                    const data = await res.json().catch(() => null);
+                    (data?.messages || []).forEach((m) => { if (!document.querySelector('[data-msg="' + m.id + '"]')) { this.appendMessage(m); this.bumpList(m); } });
+                    this.scrollBottom();
+                },
+                onFiles() { this.fileNames = Array.from(this.$refs.files.files).map(f => f.name); },
+                setReply(id, name, body) { this.replyTo = { id, name, body }; this.$refs.body?.focus(); },
+
+                async markRead() {
+                    // show 재방문 없이 읽음 처리: reply 없이 last_read 갱신은 서버 show 에서. 여기선 배지만 초기화.
+                    const badge = document.querySelector('[data-unread="' + this.activeId + '"]');
+                    if (badge) { badge.textContent = ''; badge.classList.add('hidden'); }
+                },
+
+                async editMsg(id) {
+                    const cur = document.querySelector('[data-msg="'+id+'"] [data-body]')?.textContent || '';
+                    const next = await window.promptDialog ? null : prompt('메시지 수정', cur);
+                    const val = next ?? prompt('메시지 수정', cur);
+                    if (val === null) return;
+                    const t = val.trim(); if (!t) return;
+                    await fetch('{{ url('/chat/messages') }}/'+id, { method:'PATCH', headers:{'Content-Type':'application/json','X-CSRF-TOKEN':this.csrf(),'Accept':'application/json'}, body: JSON.stringify({ body: t }) });
+                },
+                async delMsg(id) {
+                    if (!await window.confirmDialog({ title:'메시지 삭제', message:'이 메시지를 삭제할까요?', tone:'crit', confirmText:'삭제' })) return;
+                    await fetch('{{ url('/chat/messages') }}/'+id, { method:'DELETE', headers:{'X-CSRF-TOKEN':this.csrf(),'Accept':'application/json'} });
+                },
+                leave() {
+                    window.confirmDialog({ title:'채팅 나가기', message:'이 대화에서 나갈까요?', tone:'crit', confirmText:'나가기' }).then(ok => { if(ok) this.$refs.leaveForm.submit ? this.$refs.leaveForm.removeAttribute('onsubmit') || this.$refs.leaveForm.submit() : null; });
+                },
+
+                // 사용자 검색 / 대화 시작
+                openUserSearch() { this.ui='search'; this.q=''; this.results=[]; this.$nextTick(()=>this.$refs.usearch?.focus()); },
+                openGroup() { this.ui='group'; this.q=''; this.results=[]; this.picked=[]; this.groupName=''; },
+                openInvite() { this.ui='invite'; this.q=''; this.results=[]; this.picked=[]; },
+                async searchUsers() {
+                    const r = await fetch('{{ route('chat.users') }}?q=' + encodeURIComponent(this.q), { headers:{'Accept':'application/json','X-Requested-With':'XMLHttpRequest'} });
+                    this.results = await r.json();
+                },
+                startChat(id) { this.$refs.startReceiver.value = id; this.$refs.startForm.submit(); },
+                pick(u) { if(!this.picked.find(p=>p.id===u.id)) this.picked.push(u); },
+                unpick(id) { this.picked = this.picked.filter(p=>p.id!==id); },
+                createGroup() {
+                    if (!this.groupName.trim() || !this.picked.length) { window.toast('이름과 멤버를 입력하세요.','warn'); return; }
+                    this.$refs.groupNameInput.value = this.groupName;
+                    this.$refs.groupMembers.innerHTML = this.picked.map(p=>'<input type="hidden" name="member_ids[]" value="'+p.id+'">').join('');
+                    this.$refs.groupForm.submit();
+                },
+                async doInvite() {
+                    if (!this.picked.length) return;
+                    const r = await fetch('{{ $conversation ? route('chat.invite', $conversation) : '' }}', { method:'POST', headers:{'Content-Type':'application/json','X-CSRF-TOKEN':this.csrf(),'Accept':'application/json'}, body: JSON.stringify({ member_ids: this.picked.map(p=>p.id) }) });
+                    const d = await r.json(); window.toast(d.message || (r.ok?'완료':'실패'), r.ok?'ok':'crit'); this.ui=null; if(r.ok) location.reload();
+                },
+
+                esc(s){ return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); },
+                time(iso){ if(!iso) return ''; const d=new Date(iso); return d.toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'}); },
+                scrollBottom(){ this.$nextTick(()=>{ const l=this.$refs.msgList; if(l) l.scrollTop=l.scrollHeight; }); },
+            };
+        };
+    </script>
+    @endpush
+</x-app-layout>
