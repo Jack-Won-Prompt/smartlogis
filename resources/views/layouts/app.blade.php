@@ -164,6 +164,8 @@
     <x-confirm-dialog />
 
     @stack('scripts')
+    {{-- 모든 HTML select 를 검색형(자동완성) 콤보로 확장 --}}
+    <script src="{{ asset('js/autoselect.js') }}?v={{ filemtime(public_path('js/autoselect.js')) }}"></script>
     @livewireScriptConfig
 </body>
 </html>
