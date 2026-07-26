@@ -15,6 +15,8 @@ use App\Support\ExcelFailReport;
 use App\Support\ExcelFile;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
@@ -75,6 +77,49 @@ class OrganizationMasterController extends Controller
         $org = Organization::create($validated);
 
         return response()->json($this->row($org->loadCount('users')));
+    }
+
+    /**
+     * wwGrid 배치 저장. 사용자 보유 거래처는 삭제 대신 비활성화(무결성 보호).
+     */
+    public function batch(Request $request): JsonResponse
+    {
+        $updated = $request->array('updated');
+        $added = $request->array('added');
+        $deleted = $request->array('deleted');
+        $fields = ['org_type', 'code', 'name', 'biz_reg_no', 'hpid_no', 'tel', 'address', 'is_active'];
+        $counts = ['added' => 0, 'updated' => 0, 'deleted' => 0];
+
+        DB::transaction(function () use ($updated, $added, $deleted, $fields, &$counts) {
+            $ids = collect($deleted)->pluck('id')->filter()->map(fn ($v) => (int) $v)->values()->all();
+            if ($ids !== []) {
+                $deletable = Organization::whereIn('id', $ids)->doesntHave('users')->pluck('id');
+                $counts['deleted'] = Organization::whereIn('id', $deletable)->delete();
+                Organization::whereIn('id', $ids)->whereNotIn('id', $deletable)->update(['is_active' => false]);
+            }
+            foreach ($added as $row) {
+                $data = array_merge(['is_active' => true], Arr::only($row, $fields));
+                $validated = Validator::make($data, $this->rules())->validate();
+                Organization::create($validated);
+                $counts['added']++;
+            }
+            foreach ($updated as $u) {
+                $id = (int) ($u['current']['id'] ?? 0);
+                $changed = Arr::only($u['changed'] ?? [], $fields);
+                if ($id === 0 || $changed === []) {
+                    continue;
+                }
+                $org = Organization::find($id);
+                if ($org === null) {
+                    continue;
+                }
+                $validated = Validator::make($changed, array_intersect_key($this->rules($id), $changed))->validate();
+                $org->update($validated);
+                $counts['updated']++;
+            }
+        });
+
+        return response()->json(array_merge(['message' => '저장되었습니다.'], $counts));
     }
 
     public function update(Request $request, Organization $organization): JsonResponse

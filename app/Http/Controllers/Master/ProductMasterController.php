@@ -15,6 +15,8 @@ use App\Support\ExcelFile;
 use App\Validation\ProductRules;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\Validator;
 use Maatwebsite\Excel\Facades\Excel;
@@ -67,6 +69,50 @@ class ProductMasterController extends Controller
         $product = Product::create($validated);
 
         return response()->json($this->row($product->load('supplier')));
+    }
+
+    /**
+     * wwGrid 배치 저장: {updated,added,deleted} 를 한 트랜잭션에서 처리.
+     */
+    public function batch(Request $request): JsonResponse
+    {
+        $updated = $request->array('updated');
+        $added = $request->array('added');
+        $deleted = $request->array('deleted');
+        $fields = array_keys(ProductRules::rules());
+        $counts = ['added' => 0, 'updated' => 0, 'deleted' => 0];
+
+        DB::transaction(function () use ($updated, $added, $deleted, $fields, &$counts) {
+            $ids = collect($deleted)->pluck('id')->filter()->map(fn ($v) => (int) $v)->values()->all();
+            if ($ids !== []) {
+                $counts['deleted'] = Product::whereIn('id', $ids)->delete();
+            }
+            foreach ($added as $row) {
+                $data = array_merge([
+                    'unit' => 'EA', 'box_qty' => 1, 'purchase_price' => 0,
+                    'is_sterile' => false, 'use_lot_control' => true, 'use_expiry' => true, 'is_active' => true,
+                ], Arr::only($row, $fields));
+                $validated = Validator::make($data, ProductRules::rules(), [], ProductRules::attributes())->validate();
+                Product::create($validated);
+                $counts['added']++;
+            }
+            foreach ($updated as $u) {
+                $id = (int) ($u['current']['id'] ?? 0);
+                $changed = Arr::only($u['changed'] ?? [], $fields);
+                if ($id === 0 || $changed === []) {
+                    continue;
+                }
+                $product = Product::find($id);
+                if ($product === null) {
+                    continue;
+                }
+                $validated = Validator::make($changed, array_intersect_key(ProductRules::rules($id), $changed), [], ProductRules::attributes())->validate();
+                $product->update($validated);
+                $counts['updated']++;
+            }
+        });
+
+        return response()->json(array_merge(['message' => '저장되었습니다.'], $counts));
     }
 
     /** 인라인 셀 수정 {field, value}. */

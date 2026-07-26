@@ -161,6 +161,7 @@ Route::middleware('auth')->group(function () {
         Route::controller(ProductMasterController::class)->prefix('products')->name('products.')->group(function () {
             Route::get('/data', 'data')->name('data');
             Route::post('/', 'store')->name('store');
+            Route::post('/batch', 'batch')->name('batch');
             Route::patch('/{product}', 'update')->name('update');
             Route::delete('/', 'bulkDestroy')->name('bulkDestroy');
             Route::get('/export', 'export')->name('export');
@@ -174,6 +175,7 @@ Route::middleware('auth')->group(function () {
         Route::controller(OrganizationMasterController::class)->prefix('organizations')->name('organizations.')->group(function () {
             Route::get('/data', 'data')->name('data');
             Route::post('/', 'store')->name('store');
+            Route::post('/batch', 'batch')->name('batch');
             Route::patch('/{organization}', 'update')->name('update');
             Route::delete('/', 'bulkDestroy')->name('bulkDestroy');
             Route::get('/export', 'export')->name('export');
@@ -202,6 +204,7 @@ Route::middleware('auth')->group(function () {
         Route::controller(SafetyStockMasterController::class)->prefix('safety-stocks')->name('safety-stocks.')->group(function () {
             Route::get('/data', 'data')->name('data');
             Route::post('/', 'store')->name('store');
+            Route::post('/batch', 'batch')->name('batch');
             Route::patch('/{key}', 'update')->name('update');
             Route::delete('/', 'bulkDestroy')->name('bulkDestroy');
             Route::post('/auto-suggest', 'autoSuggest')->name('autoSuggest');

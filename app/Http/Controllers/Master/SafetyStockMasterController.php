@@ -14,6 +14,7 @@ use App\Support\ExcelFailReport;
 use App\Support\ExcelFile;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\Validator;
@@ -71,6 +72,63 @@ class SafetyStockMasterController extends Controller
             ->where('hospital_id', $validated['hospital_id'])->where('product_id', $validated['product_id'])->first();
 
         return response()->json($this->row($row));
+    }
+
+    /**
+     * wwGrid 배치 저장. 복합키(hospital_id, product_id) upsert. max/reorder 0·빈값은 자동 산출.
+     */
+    public function batch(Request $request): JsonResponse
+    {
+        $updated = $request->array('updated');
+        $added = $request->array('added');
+        $deleted = $request->array('deleted');
+        $counts = ['added' => 0, 'updated' => 0, 'deleted' => 0];
+
+        $rules = [
+            'hospital_id' => ['required', 'integer', Rule::exists('organizations', 'id')->where('org_type', 'HOSPITAL')],
+            'product_id' => ['required', 'integer', 'exists:products,id'],
+            'safety_qty' => ['required', 'integer', 'min:0'],
+            'max_qty' => ['nullable', 'integer', 'min:0'],
+            'reorder_qty' => ['nullable', 'integer', 'min:0'],
+        ];
+        $names = ['hospital_id' => '병원', 'product_id' => '제품', 'safety_qty' => '안전재고'];
+        $keys = ['hospital_id', 'product_id', 'safety_qty', 'max_qty', 'reorder_qty'];
+
+        $upsert = function (array $v): void {
+            $safety = (int) $v['safety_qty'];
+            DB::table('safety_stocks')->updateOrInsert(
+                ['hospital_id' => $v['hospital_id'], 'product_id' => $v['product_id']],
+                [
+                    'safety_qty' => $safety,
+                    'max_qty' => (int) (($v['max_qty'] ?? 0) ?: $safety * 3),
+                    'reorder_qty' => (int) (($v['reorder_qty'] ?? 0) ?: $safety * 2),
+                    'updated_at' => now(), 'created_at' => now(),
+                ]
+            );
+        };
+
+        DB::transaction(function () use ($updated, $added, $deleted, $rules, $names, $keys, $upsert, &$counts) {
+            foreach ($deleted as $row) {
+                $h = (int) ($row['hospital_id'] ?? 0);
+                $p = (int) ($row['product_id'] ?? 0);
+                if ($h !== 0 && $p !== 0) {
+                    $counts['deleted'] += DB::table('safety_stocks')->where('hospital_id', $h)->where('product_id', $p)->delete();
+                }
+            }
+            foreach ($added as $row) {
+                $v = Validator::make(Arr::only($row, $keys), $rules, [], $names)->validate();
+                $upsert($v);
+                $counts['added']++;
+            }
+            foreach ($updated as $u) {
+                $data = Arr::only(array_merge($u['current'] ?? [], $u['changed'] ?? []), $keys);
+                $v = Validator::make($data, $rules, [], $names)->validate();
+                $upsert($v);
+                $counts['updated']++;
+            }
+        });
+
+        return response()->json(array_merge(['message' => '저장되었습니다.'], $counts));
     }
 
     public function update(Request $request, string $key): JsonResponse

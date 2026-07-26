@@ -52,6 +52,10 @@
             params="{ keyword: document.getElementById('f-keyword').value, supplier_id: document.getElementById('f-supplier').value, storage_type: document.getElementById('f-storage').value, is_active: document.getElementById('f-active').value }" />
 
         <div class="flex items-center gap-2">
+            <button id="btn-save" class="inline-flex items-center gap-1.5 rounded-lg bg-amber-500 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-amber-600" data-magnetic>
+                <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg> 저장
+            </button>
+            <button id="btn-reset" class="rounded-lg border border-line bg-surface-1 px-4 py-2 text-sm font-medium text-ink-600 hover:bg-surface-0">변경 취소</button>
             <button id="btn-delete" class="btn-ghost !py-2 !text-sm !text-crit-600 !ring-crit-600/20 hover:!bg-crit-100">
                 <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6M10 11v6M14 11v6"/></svg>
                 선택 삭제
@@ -63,41 +67,36 @@
         </div>
     </div>
 
-    {{-- 그리드 (mv2 TUI Grid) --}}
-    <x-grid-assets />
+    {{-- 그리드 (wwGrid) --}}
+    <x-ww-grid-assets />
     <div id="product-grid" class="mt-1"></div>
 
     @push('scripts')
     <script>
-        jQuery(function () {
+        (function () {
             const supplierMap = @json($suppliers->pluck('name', 'id'));
             const storageMap = @json($storageTypes);
-            const storageTones = { ROOM: 'info', COLD: 'hold', FROZEN: 'hold' };
+            function f(id){ return document.getElementById(id).value; }
 
-            const grid = window.SmartTUI.create('#product-grid', {
+            const grid = window.WWGrid.connect('#product-grid', {
                 dataUrl: '{{ route('master.products.data') }}',
-                createUrl: '{{ route('master.products.store') }}',
-                updateUrl: (id) => `{{ url('master/products') }}/${id}`,
-                deleteUrl: '{{ route('master.products.bulkDestroy') }}',
+                batchUrl: '{{ route('master.products.batch') }}',
+                screenName: '제품',
                 params: () => ({
-                    keyword: document.getElementById('f-keyword').value,
-                    supplier_id: document.getElementById('f-supplier').value,
-                    storage_type: document.getElementById('f-storage').value,
-                    is_active: document.getElementById('f-active').value,
+                    keyword: f('f-keyword'), supplier_id: f('f-supplier'),
+                    storage_type: f('f-storage'), is_active: f('f-active'),
                 }),
                 defaults: { product_code: '', product_name: '', supplier_id: '', gtin: '', storage_type: 'ROOM', sales_price: 0, is_active: true },
                 columns: [
-                    { title: '제품코드', field: 'product_code', editor: 'text', width: 130, html: window.SmartTUI.mono },
+                    { title: '제품코드', field: 'product_code', editor: 'text', width: 130 },
                     { title: '제품명', field: 'product_name', editor: 'text', width: 220 },
-                    { title: '공급사', field: 'supplier_id', editor: 'list', values: supplierMap, width: 170,
-                      html: (v, row) => supplierMap[v] ?? row.supplier_name ?? '' },
-                    { title: 'GTIN', field: 'gtin', editor: 'text', width: 150, html: window.SmartTUI.mono },
-                    { title: '보관', field: 'storage_type', editor: 'list', values: storageMap, width: 110,
-                      html: (v) => `<span class="stui-badge stui-${storageTones[v]||'hold'}">${storageMap[v]||v}</span>` },
-                    { title: '매출가', field: 'sales_price', editor: 'number', align: 'right', width: 130, html: window.SmartTUI.money },
-                    { title: '사용', field: 'is_active', editor: 'checkbox', align: 'center', width: 90,
-                      html: (v) => v ? '<span class="stui-badge stui-ok">사용</span>' : '<span class="stui-badge stui-hold">중지</span>' },
+                    { title: '공급사', field: 'supplier_id', editor: 'list', values: supplierMap, width: 170 },
+                    { title: 'GTIN', field: 'gtin', editor: 'text', width: 150 },
+                    { title: '보관', field: 'storage_type', editor: 'list', values: storageMap, width: 110 },
+                    { title: '매출가', field: 'sales_price', editor: 'number', width: 130 },
+                    { title: '사용', field: 'is_active', editor: 'checkbox', width: 90 },
                 ],
+                buttons: { add:'btn-add', delete:'btn-delete', save:'btn-save', reset:'btn-reset' },
             });
 
             let t;
@@ -108,9 +107,7 @@
                 ['f-supplier', 'f-storage', 'f-active'].forEach(id => document.getElementById(id).value = '');
                 grid.refresh();
             });
-            document.getElementById('btn-add').addEventListener('click', () => grid.addBlankRow());
-            document.getElementById('btn-delete').addEventListener('click', () => grid.deleteSelected());
-        });
+        })();
     </script>
     @endpush
 </x-app-layout>

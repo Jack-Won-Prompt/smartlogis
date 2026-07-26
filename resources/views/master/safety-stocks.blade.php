@@ -35,6 +35,10 @@
                 <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-3-6.7M21 4v4h-4"/></svg>
                 자동 산출
             </button>
+            <button id="btn-save" class="inline-flex items-center gap-1.5 rounded-lg bg-amber-500 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-amber-600" data-magnetic>
+                <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg> 저장
+            </button>
+            <button id="btn-reset" class="rounded-lg border border-line bg-surface-1 px-4 py-2 text-sm font-medium text-ink-600 hover:bg-surface-0">변경 취소</button>
             <button id="btn-delete" class="btn-ghost !py-2 !text-sm !text-crit-600 !ring-crit-600/20 hover:!bg-crit-100">선택 삭제</button>
             <button id="btn-add" class="btn-primary !py-2 !text-sm" data-magnetic>
                 <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg> 행 추가
@@ -42,39 +46,36 @@
         </div>
     </div>
 
-    <x-grid-assets />
+    <x-ww-grid-assets />
     <div id="ss-grid" class="mt-1"></div>
 
     @push('scripts')
     <script>
-        jQuery(function () {
+        (function () {
             const hospitalMap = @json($hospitals->pluck('name','id'));
             const productMap = @json($products->mapWithKeys(fn($p)=>[$p->id => $p->product_name.' ('.$p->product_code.')']));
             function f(id){ return document.getElementById(id).value; }
-            const num = (v)=>`<span class="stui-mono">${Number(v||0).toLocaleString()}</span>`;
 
-            const grid = window.SmartTUI.create('#ss-grid', {
+            const grid = window.WWGrid.connect('#ss-grid', {
                 dataUrl: '{{ route('master.safety-stocks.data') }}',
-                createUrl: '{{ route('master.safety-stocks.store') }}',
-                updateUrl: (id) => `{{ url('master/safety-stocks') }}/${id}`,
-                deleteUrl: '{{ route('master.safety-stocks.bulkDestroy') }}',
+                batchUrl: '{{ route('master.safety-stocks.batch') }}',
+                screenName: '안전재고',
                 params: () => ({ hospital_id:f('f-hospital'), keyword:f('f-keyword') }),
                 defaults: { hospital_id:'', product_id:'', safety_qty:0, max_qty:0, reorder_qty:0 },
                 columns: [
-                    { title:'병원', field:'hospital_id', editor:'list', values:hospitalMap, html:(v,row)=>hospitalMap[v]??row.hospital_name??'' },
-                    { title:'제품', field:'product_id', editor:'list', values:productMap, html:(v,row)=>row.product_name ?? (productMap[v]||'') },
-                    { title:'안전재고', field:'safety_qty', editor:'number', align:'right', html:(v)=>`<span class="stui-mono" style="font-weight:600">${Number(v||0).toLocaleString()}</span>` },
-                    { title:'최대재고', field:'max_qty', editor:'number', align:'right', html:num },
-                    { title:'보충수량', field:'reorder_qty', editor:'number', align:'right', html:num },
+                    { title:'병원', field:'hospital_id', editor:'list', values:hospitalMap, width:180 },
+                    { title:'제품', field:'product_id', editor:'list', values:productMap, width:280 },
+                    { title:'안전재고', field:'safety_qty', editor:'number', width:110 },
+                    { title:'최대재고', field:'max_qty', editor:'number', width:110 },
+                    { title:'보충수량', field:'reorder_qty', editor:'number', width:110 },
                 ],
+                buttons: { add:'btn-add', delete:'btn-delete', save:'btn-save', reset:'btn-reset' },
             });
 
             let t;
             document.getElementById('f-keyword').addEventListener('input',()=>{clearTimeout(t);t=setTimeout(()=>grid.refresh(),350);});
             document.getElementById('f-hospital').addEventListener('change',()=>grid.refresh());
             document.getElementById('f-reset').addEventListener('click',()=>{['f-keyword','f-hospital'].forEach(id=>document.getElementById(id).value='');grid.refresh();});
-            document.getElementById('btn-add').addEventListener('click',()=>grid.addBlankRow());
-            document.getElementById('btn-delete').addEventListener('click',()=>grid.deleteSelected());
 
             document.getElementById('btn-suggest').addEventListener('click', async () => {
                 const hid = f('f-hospital');
@@ -86,7 +87,7 @@
                 window.toast(data.message || '완료', res.ok ? 'ok':'warn', '자동 산출');
                 grid.refresh();
             });
-        });
+        })();
     </script>
     @endpush
 </x-app-layout>
