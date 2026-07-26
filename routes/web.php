@@ -187,6 +187,7 @@ Route::middleware('auth')->group(function () {
         Route::controller(UserMasterController::class)->prefix('users')->name('users.')->group(function () {
             Route::get('/data', 'data')->name('data');
             Route::post('/', 'store')->name('store');
+            Route::post('/batch', 'batch')->name('batch'); // wwGrid 배치 저장(updated/added/deleted)
             Route::patch('/{user}', 'update')->name('update');
             Route::post('/{user}/reset-password', 'resetPassword')->name('resetPassword');
             Route::delete('/', 'bulkDestroy')->name('bulkDestroy');

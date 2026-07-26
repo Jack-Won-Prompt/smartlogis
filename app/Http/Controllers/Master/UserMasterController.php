@@ -16,6 +16,8 @@ use App\Support\ExcelFailReport;
 use App\Support\ExcelFile;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\Validator;
@@ -93,6 +95,70 @@ class UserMasterController extends Controller
         $user = User::create($validated);
 
         return response()->json(array_merge($this->row($user->load('organization')), ['temp_password' => $temp]));
+    }
+
+    /**
+     * wwGrid 배치 저장: { updated:[{current,changed}], added:[{...}], deleted:[{...}] }.
+     * 삭제→추가→수정 순으로 한 트랜잭션에서 처리한다. 자기 자신은 삭제 제외.
+     */
+    public function batch(Request $request): JsonResponse
+    {
+        $updated = $request->array('updated');
+        $added = $request->array('added');
+        $deleted = $request->array('deleted');
+        $meId = $request->user()?->id;
+
+        $fields = ['login_id', 'email', 'name', 'role', 'org_id', 'status', 'tel'];
+        $temps = [];
+        $counts = ['added' => 0, 'updated' => 0, 'deleted' => 0];
+
+        DB::transaction(function () use ($updated, $added, $deleted, $meId, $fields, &$temps, &$counts) {
+            // 삭제 — 자기 자신 제외
+            $delIds = collect($deleted)->pluck('id')->filter()->map(fn ($v) => (int) $v)
+                ->reject(fn ($id) => $id === $meId)->values()->all();
+            if ($delIds !== []) {
+                $counts['deleted'] = User::whereIn('id', $delIds)->delete();
+            }
+
+            // 추가
+            foreach ($added as $row) {
+                $data = array_merge(['status' => UserStatus::ACTIVE->value], Arr::only($row, $fields));
+                $validated = Validator::make($data, $this->rules())->validate();
+                if (empty($validated['login_id'])) {
+                    $validated['login_id'] = $validated['email'];
+                }
+                $validated['is_active'] = $validated['status'] === UserStatus::ACTIVE->value;
+                if ($validated['status'] === UserStatus::ACTIVE->value) {
+                    $validated['approved_at'] = now();
+                }
+                $temp = Str::password(10, symbols: false);
+                $validated['password'] = Hash::make($temp);
+                $user = User::create($validated);
+                $temps[] = ['email' => $user->email, 'temp' => $temp];
+                $counts['added']++;
+            }
+
+            // 수정 — 변경된 필드만 규칙 검증 후 반영
+            foreach ($updated as $u) {
+                $id = (int) ($u['current']['id'] ?? 0);
+                $changed = Arr::only($u['changed'] ?? [], $fields);
+                if ($id === 0 || $changed === []) {
+                    continue;
+                }
+                $user = User::find($id);
+                if ($user === null) {
+                    continue;
+                }
+                $validated = Validator::make($changed, array_intersect_key($this->rules($id), $changed))->validate();
+                if (array_key_exists('status', $validated)) {
+                    $validated['is_active'] = $validated['status'] === UserStatus::ACTIVE->value;
+                }
+                $user->update($validated);
+                $counts['updated']++;
+            }
+        });
+
+        return response()->json(array_merge(['message' => '저장되었습니다.'], $counts, ['temp_passwords' => $temps]));
     }
 
     public function update(Request $request, User $user): JsonResponse
