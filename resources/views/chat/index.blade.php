@@ -6,6 +6,13 @@
     $pusherCluster = config('broadcasting.connections.pusher.options.cluster');
     // 초기 대화 메시지(활성 대화가 있으면)
     $activeId = $conversation?->id;
+    // 1:1 읽음 표시 초기값 — 상대의 last_read 가 내 마지막 메시지 이후이면 '읽음'
+    $otherReadInit = false;
+    if ($conversation && ! $conversation->is_group) {
+        $myLast = $conversation->messages->where('sender_id', $meId)->last();
+        $oReadAt = $conversation->otherParticipant($meId)?->pivot?->last_read_at;
+        $otherReadInit = (bool) ($myLast && $oReadAt && $oReadAt >= $myLast->created_at);
+    }
 @endphp
 
 <x-app-layout title="채팅" breadcrumb="채팅">
@@ -20,6 +27,7 @@
             pusherKey: @js($pusherKey),
             pusherCluster: @js($pusherCluster),
             convChannels: @js($conversations->pluck('id')),
+            othersReadInit: {{ $otherReadInit ? 'true' : 'false' }},
          })" x-init="init()">
 
         {{-- ── 좌: 대화 목록 ─────────────────────────────── --}}
@@ -85,9 +93,20 @@
                 </header>
 
                 <div x-ref="msgList" class="min-h-0 flex-1 space-y-1 overflow-y-auto px-5 py-4">
+                    @php $prevDay = null; @endphp
                     @foreach($conversation->messages as $m)
+                        @php $day = optional($m->created_at)?->timezone('Asia/Seoul')?->format('Y-m-d'); @endphp
+                        @if($day !== $prevDay)
+                            <div class="my-3 flex items-center justify-center">
+                                <span class="rounded-full bg-surface-2 px-3 py-1 text-[11px] text-ink-400">{{ optional($m->created_at)?->timezone('Asia/Seoul')?->format('Y년 n월 j일') }}</span>
+                            </div>
+                            @php $prevDay = $day; @endphp
+                        @endif
                         @include('chat.partials.message', ['m' => $m, 'meId' => $meId])
                     @endforeach
+                    @unless($conversation->is_group)
+                        <div x-show="othersRead" x-cloak class="pr-1 pt-0.5 text-right text-[11px] font-medium text-brand-500">읽음</div>
+                    @endunless
                 </div>
 
                 {{-- 답장 미리보기 --}}
@@ -180,11 +199,20 @@
                 meId: cfg.meId, activeId: cfg.activeId, ui: null,
                 q: '', results: [], picked: [], groupName: '',
                 body: '', fileNames: [], replyTo: null,
+                othersRead: cfg.othersReadInit || false,
                 pusher: null,
 
                 init() {
                     this.scrollBottom();
                     this.setupPusher(cfg.pusherKey, cfg.pusherCluster, cfg.convChannels || []);
+                    // 입력창 자동 높이
+                    this.$watch('body', () => this.autoGrow());
+                },
+                autoGrow() {
+                    const el = this.$refs.body;
+                    if (!el) return;
+                    el.style.height = 'auto';
+                    el.style.height = Math.min(el.scrollHeight, 140) + 'px';
                 },
                 csrf() { return document.querySelector('meta[name=csrf-token]').content; },
 
@@ -202,17 +230,27 @@
                         ch.bind('message.sent', (d) => this.onMessage(d));
                         ch.bind('message.updated', (d) => this.onUpdated(d));
                         ch.bind('message.deleted', (d) => this.onDeleted(d));
+                        ch.bind('conversation.read', (d) => this.onRead(d));
                     });
                 },
 
                 onMessage(d) {
-                    // 목록 사이드바 갱신
+                    if (d.sender_id === this.meId) return; // 내가 보낸 건 전송 응답에서 이미 표시
                     this.bumpList(d);
-                    if (d.conversation_id !== this.activeId) return;
+                    if (d.conversation_id !== this.activeId) {
+                        // 다른 대화 → 토스트 알림
+                        if (window.toast) window.toast((d.sender_name || '') + ': ' + (d.body || (d.file_name ? '📎 ' + d.file_name : '')), 'info', '새 메시지');
+                        return;
+                    }
                     if (document.querySelector('[data-msg="' + d.id + '"]')) return; // 중복 방지
+                    const near = this.nearBottom();
                     this.appendMessage(d);
-                    this.scrollBottom();
-                    if (d.sender_id !== this.meId) this.markRead();
+                    if (near) this.scrollBottom();
+                    this.markRead();
+                },
+                // 상대가 내 메시지를 읽음 → '읽음' 표시
+                onRead(d) {
+                    if (d.conversation_id === this.activeId && d.user_id !== this.meId) this.othersRead = true;
                 },
                 onUpdated(d) {
                     const el = document.querySelector('[data-msg="' + d.id + '"] [data-body]');
@@ -272,7 +310,9 @@
                     // 전송 응답으로 즉시 표시(Pusher 배달과 무관). Pusher echo 는 id 중복제거로 무시됨.
                     const data = await res.json().catch(() => null);
                     (data?.messages || []).forEach((m) => { if (!document.querySelector('[data-msg="' + m.id + '"]')) { this.appendMessage(m); this.bumpList(m); } });
+                    this.othersRead = false; // 새 메시지는 아직 안읽음
                     this.scrollBottom();
+                    this.autoGrow();
                 },
                 onFiles() { this.fileNames = Array.from(this.$refs.files.files).map(f => f.name); },
                 setReply(id, name, body) { this.replyTo = { id, name, body }; this.$refs.body?.focus(); },
@@ -283,13 +323,29 @@
                     if (badge) { badge.textContent = ''; badge.classList.add('hidden'); }
                 },
 
-                async editMsg(id) {
-                    const cur = document.querySelector('[data-msg="'+id+'"] [data-body]')?.textContent || '';
-                    const next = await window.promptDialog ? null : prompt('메시지 수정', cur);
-                    const val = next ?? prompt('메시지 수정', cur);
-                    if (val === null) return;
-                    const t = val.trim(); if (!t) return;
-                    await fetch('{{ url('/chat/messages') }}/'+id, { method:'PATCH', headers:{'Content-Type':'application/json','X-CSRF-TOKEN':this.csrf(),'Accept':'application/json'}, body: JSON.stringify({ body: t }) });
+                // 인라인 편집(네이티브 prompt 미사용). 말풍선 본문을 textarea 로 바꿔 Enter 저장 / Esc 취소.
+                editMsg(id) {
+                    const bodyEl = document.querySelector('[data-msg="'+id+'"] [data-body]');
+                    if (!bodyEl || bodyEl.querySelector('textarea')) return;
+                    const cur = bodyEl.textContent;
+                    bodyEl.innerHTML = '';
+                    const ta = document.createElement('textarea');
+                    ta.value = cur; ta.rows = 1;
+                    ta.className = 'block w-full resize-none rounded bg-white/20 px-1.5 py-0.5 text-sm text-inherit outline-none ring-1 ring-white/40';
+                    bodyEl.appendChild(ta); ta.focus(); ta.select();
+                    ta.style.height = ta.scrollHeight + 'px';
+                    const finish = async (save) => {
+                        const t = ta.value.trim();
+                        if (!save || !t || t === cur) { bodyEl.textContent = cur; return; }
+                        const r = await fetch('{{ url('/chat/messages') }}/'+id, { method:'PATCH', headers:{'Content-Type':'application/json','X-CSRF-TOKEN':this.csrf(),'Accept':'application/json'}, body: JSON.stringify({ body: t }) });
+                        if (r.ok) { bodyEl.textContent = t; const tag = bodyEl.parentElement.querySelector('[data-edited]'); if (tag) tag.classList.remove('hidden'); }
+                        else { bodyEl.textContent = cur; if (window.toast) window.toast('수정에 실패했습니다.', 'crit'); }
+                    };
+                    ta.addEventListener('keydown', (e) => {
+                        if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); finish(true); }
+                        else if (e.key === 'Escape') { e.preventDefault(); finish(false); }
+                    });
+                    ta.addEventListener('blur', () => finish(true), { once: true });
                 },
                 async delMsg(id) {
                     if (!await window.confirmDialog({ title:'메시지 삭제', message:'이 메시지를 삭제할까요?', tone:'crit', confirmText:'삭제' })) return;
@@ -325,6 +381,7 @@
                 esc(s){ return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); },
                 time(iso){ if(!iso) return ''; const d=new Date(iso); return d.toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'}); },
                 scrollBottom(){ this.$nextTick(()=>{ const l=this.$refs.msgList; if(l) l.scrollTop=l.scrollHeight; }); },
+                nearBottom(){ const l=this.$refs.msgList; return l ? (l.scrollHeight - l.scrollTop - l.clientHeight) < 120 : true; },
             };
         };
     </script>
