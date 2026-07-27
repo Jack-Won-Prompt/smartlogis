@@ -225,6 +225,23 @@
             </div>
         </div>
 
+        {{-- ── 메시지 수정 팝업 ─────────────────────────── --}}
+        <template x-if="editing">
+            <div class="chat-lightbox" @click.self="editing=null" @keydown.escape.window="editing=null">
+                <div class="w-full max-w-md rounded-2xl bg-white p-5 shadow-lift">
+                    <h3 class="mb-3 text-base font-bold text-ink-900">메시지 수정</h3>
+                    <textarea data-edit-body x-model="editing.body" rows="3"
+                              @keydown.enter="if(!$event.shiftKey){$event.preventDefault(); saveEdit();}"
+                              placeholder="메시지 입력 (Enter 저장, Shift+Enter 줄바꿈)"
+                              class="block w-full resize-none rounded-lg border-line bg-surface-1 px-3 py-2 text-sm focus:border-brand-500 focus:ring-2 focus:ring-brand-400/25"></textarea>
+                    <div class="mt-4 flex justify-end gap-2">
+                        <button @click="editing=null" class="rounded-lg px-4 py-2 text-sm text-ink-500 hover:bg-surface-2">취소</button>
+                        <button @click="saveEdit()" class="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700">저장</button>
+                    </div>
+                </div>
+            </div>
+        </template>
+
         {{-- 숨은 폼(1:1 시작 / 그룹 생성 서버 제출용) --}}
         <form x-ref="startForm" method="POST" action="{{ route('chat.store') }}" class="hidden">@csrf<input type="hidden" name="receiver_id" x-ref="startReceiver"></form>
         <form x-ref="groupForm" method="POST" action="{{ route('chat.group') }}" class="hidden">@csrf<input type="hidden" name="name" x-ref="groupNameInput"><div x-ref="groupMembers"></div></form>
@@ -238,7 +255,7 @@
                 q: '', results: [], picked: [], groupName: '',
                 body: '', pendingFiles: [], replyTo: null,
                 othersRead: cfg.othersReadInit || false,
-                pusher: null, lightbox: null,
+                pusher: null, lightbox: null, editing: null,
 
                 init() {
                     this.fitHeight();
@@ -425,29 +442,23 @@
                     if (badge) { badge.textContent = ''; badge.classList.add('hidden'); }
                 },
 
-                // 인라인 편집(네이티브 prompt 미사용). 말풍선 본문을 textarea 로 바꿔 Enter 저장 / Esc 취소.
+                // 수정 팝업 열기(현재 본문 채워 표시). Enter 저장 / Esc·취소 닫기.
                 editMsg(id) {
                     const bodyEl = document.querySelector('[data-msg="'+id+'"] [data-body]');
-                    if (!bodyEl || bodyEl.querySelector('textarea')) return;
-                    const cur = bodyEl.textContent;
-                    bodyEl.innerHTML = '';
-                    const ta = document.createElement('textarea');
-                    ta.value = cur; ta.rows = 1;
-                    ta.className = 'block w-full resize-none rounded bg-white/20 px-1.5 py-0.5 text-sm text-inherit outline-none ring-1 ring-white/40';
-                    bodyEl.appendChild(ta); ta.focus(); ta.select();
-                    ta.style.height = ta.scrollHeight + 'px';
-                    const finish = async (save) => {
-                        const t = ta.value.trim();
-                        if (!save || !t || t === cur) { bodyEl.textContent = cur; return; }
-                        const r = await fetch('{{ url('/chat/messages') }}/'+id, { method:'PATCH', headers:{'Content-Type':'application/json','X-CSRF-TOKEN':this.csrf(),'Accept':'application/json'}, body: JSON.stringify({ body: t }) });
-                        if (r.ok) { bodyEl.textContent = t; const tag = bodyEl.parentElement.querySelector('[data-edited]'); if (tag) tag.classList.remove('hidden'); }
-                        else { bodyEl.textContent = cur; if (window.toast) window.toast('수정에 실패했습니다.', 'crit'); }
-                    };
-                    ta.addEventListener('keydown', (e) => {
-                        if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); finish(true); }
-                        else if (e.key === 'Escape') { e.preventDefault(); finish(false); }
-                    });
-                    ta.addEventListener('blur', () => finish(true), { once: true });
+                    this.editing = { id, body: bodyEl ? bodyEl.textContent : '' };
+                    this.$nextTick(() => { const t = document.querySelector('[data-edit-body]'); if (t) { t.focus(); t.select(); } });
+                },
+                async saveEdit() {
+                    if (!this.editing) return;
+                    const id = this.editing.id;
+                    const t = (this.editing.body || '').trim();
+                    if (!t) { if (window.toast) window.toast('내용을 입력하세요.', 'warn'); return; }
+                    const r = await fetch('{{ url('/chat/messages') }}/'+id, { method:'PATCH', headers:{'Content-Type':'application/json','X-CSRF-TOKEN':this.csrf(),'Accept':'application/json'}, body: JSON.stringify({ body: t }) });
+                    if (r.ok) {
+                        const bodyEl = document.querySelector('[data-msg="'+id+'"] [data-body]');
+                        if (bodyEl) { bodyEl.textContent = t; const tag = bodyEl.parentElement.querySelector('[data-edited]'); if (tag) tag.classList.remove('hidden'); }
+                        this.editing = null;
+                    } else if (window.toast) { window.toast('수정에 실패했습니다.', 'crit'); }
                 },
                 async delMsg(id) {
                     if (!await window.confirmDialog({ title:'메시지 삭제', message:'이 메시지를 삭제할까요?', tone:'crit', confirmText:'삭제' })) return;
