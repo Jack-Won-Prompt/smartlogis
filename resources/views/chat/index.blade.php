@@ -340,7 +340,12 @@
                     const res = await fetch('{{ $conversation ? route('chat.reply', $conversation) : '' }}', {
                         method: 'POST', headers: { 'X-CSRF-TOKEN': this.csrf(), 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }, body: fd,
                     });
-                    if (!res.ok) { if (window.toast) window.toast('전송에 실패했습니다.', 'crit'); return; }
+                    if (!res.ok) {
+                        const msg = res.status === 413 ? '파일 용량이 너무 큽니다(서버 업로드 한도 초과).'
+                            : (res.status === 422 ? '첨부할 수 없는 파일이거나 입력값을 확인하세요.' : '전송에 실패했습니다.');
+                        if (window.toast) window.toast(msg, 'crit');
+                        return;
+                    }
                     // 전송 응답으로 즉시 표시(Pusher 배달과 무관). Pusher echo 는 id 중복제거로 무시됨.
                     const data = await res.json().catch(() => null);
                     (data?.messages || []).forEach((m) => { if (!document.querySelector('[data-msg="' + m.id + '"]')) { this.appendMessage(m); this.bumpList(m); } });
@@ -348,9 +353,19 @@
                     this.scrollBottom();
                     this.autoGrow();
                 },
+                // 파일 첨부(용량 사전 체크: 20MB 초과는 서버 413 유발 → 미리 차단)
+                addFile(f) {
+                    const MAX = 20 * 1024 * 1024;
+                    if (f.size > MAX) {
+                        if (window.toast) window.toast((f.name || '파일') + ': 20MB 를 초과해 첨부할 수 없습니다.', 'warn');
+                        return false;
+                    }
+                    this.pendingFiles.push(f);
+                    return true;
+                },
                 onFiles() {
                     const fs = this.$refs.files?.files || [];
-                    for (const f of fs) this.pendingFiles.push(f);
+                    for (const f of fs) this.addFile(f);
                     if (this.$refs.files) this.$refs.files.value = ''; // 같은 파일 재선택 허용
                 },
                 // 클립보드 붙여넣기(Ctrl+V) 로 이미지/파일 첨부
@@ -358,7 +373,7 @@
                     const items = (e.clipboardData && e.clipboardData.items) || [];
                     let added = 0;
                     for (const it of items) {
-                        if (it.kind === 'file') { const f = it.getAsFile(); if (f) { this.pendingFiles.push(f); added++; } }
+                        if (it.kind === 'file') { const f = it.getAsFile(); if (f && this.addFile(f)) added++; }
                     }
                     if (added) { e.preventDefault(); if (window.toast) window.toast(added + '개 파일을 첨부했습니다. 전송을 누르세요.', 'info'); }
                 },

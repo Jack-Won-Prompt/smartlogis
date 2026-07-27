@@ -53,6 +53,7 @@
                 columns: [
                     { title:'일시', field:'created_at', width:170 },
                     { title:'사용자', field:'user_name', width:150 },
+                    { title:'로그인 ID', field:'login_id', width:150 },
                     { title:'경로', field:'path', width:240 },
                     { title:'라우트', field:'route', width:180 },
                     { title:'IP', field:'ip', width:130 },

@@ -40,9 +40,10 @@ class AccessLogController extends Controller
         $size = min(max($request->integer('size', 50), 1), 500);
         $p = $query->paginate($size, ['*'], 'page', $request->integer('page', 1));
 
-        $names = User::query()
+        $users = User::query()
             ->whereIn('id', $p->getCollection()->pluck('user_id')->filter()->unique()->all())
-            ->pluck('name', 'id');
+            ->get(['id', 'name', 'login_id'])
+            ->keyBy('id');
 
         return response()->json([
             'last_page' => $p->lastPage(),
@@ -50,7 +51,8 @@ class AccessLogController extends Controller
             'data' => $p->getCollection()->map(fn (AccessLog $r) => [
                 'id' => $r->id,
                 'created_at' => $r->created_at?->timezone('Asia/Seoul')->format('Y-m-d H:i:s'),
-                'user_name' => $r->user_id ? ($names[$r->user_id] ?? '(삭제된 사용자)') : '게스트',
+                'user_name' => $r->user_id ? ($users[$r->user_id]->name ?? '(삭제된 사용자)') : '게스트',
+                'login_id' => $r->user_id ? ($users[$r->user_id]->login_id ?? '-') : '-',
                 'path' => $r->path,
                 'route' => $r->route,
                 'ip' => $r->ip,
