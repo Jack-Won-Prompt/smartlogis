@@ -19,7 +19,7 @@
                 @endif
                 @if($m->file_path)
                     @if($m->isImage())
-                        <a href="{{ $m->fileUrl() }}" target="_blank"><img src="{{ $m->fileUrl() }}" class="max-h-52 rounded-lg" alt="{{ $m->file_name }}"></a>
+                        <a href="{{ $m->fileUrl() }}" target="_blank"><img src="{{ $m->fileUrl() }}" class="chat-img" alt="{{ $m->file_name }}"></a>
                     @else
                         <a href="{{ $m->fileUrl() }}" target="_blank" class="flex items-center gap-1 underline">📎 {{ $m->file_name }} <span class="text-[10px] opacity-70">({{ $m->formattedSize() }})</span></a>
                     @endif

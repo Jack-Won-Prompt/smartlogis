@@ -18,12 +18,15 @@
 <x-app-layout title="채팅" breadcrumb="채팅">
     @push('head')
         <script src="https://js.pusher.com/8.2.0/pusher.min.js"></script>
-        {{-- 메시지 액션바(답장/수정/삭제) — group-hover 미컴파일 대비 raw CSS(빌드 무관).
-             hover 로만 노출하면 발견이 어려워 항상 옅게 보이고 hover 시 진해진다(터치기기도 노출). --}}
+        {{-- 채팅용 raw CSS(Tailwind 퍼지/미컴파일과 무관하게 강제). --}}
         <style>
-            .chat-msg-actions { display: flex; opacity: .45; transition: opacity .12s ease; }
-            .group:hover .chat-msg-actions { opacity: 1; }
-            @media (hover: none) { .chat-msg-actions { opacity: 1; } }
+            /* 액션바(답장/수정/삭제) — 각 글에 마우스오버 시에만 노출 */
+            .chat-msg-actions { display: none; }
+            .group:hover .chat-msg-actions { display: flex; }
+            @media (hover: none) { .chat-msg-actions { display: flex; } } /* 터치기기는 hover 불가 → 상시 */
+            /* 첨부 이미지 썸네일 크기 고정(max-h-52 미컴파일 대비) */
+            .chat-img { max-width: 260px; max-height: 260px; width: auto; height: auto;
+                        border-radius: .5rem; object-fit: contain; display: block; cursor: zoom-in; }
         </style>
     @endpush
 
@@ -309,7 +312,7 @@
                     if (d.reply_to) bubble += '<div class="mb-1 rounded bg-black/5 px-2 py-1 text-[11px] opacity-80"><b>' + this.esc(d.reply_to.sender_name||'') + '</b> ' + this.esc((d.reply_to.body||'').slice(0,60)) + '</div>';
                     if (d.file_url) {
                         bubble += d.is_image
-                            ? '<a href="'+d.file_url+'" target="_blank"><img src="'+d.file_url+'" class="max-h-52 rounded-lg"></a>'
+                            ? '<a href="'+d.file_url+'" target="_blank"><img src="'+d.file_url+'" class="chat-img"></a>'
                             : '<a href="'+d.file_url+'" target="_blank" class="flex items-center gap-1 underline">📎 '+this.esc(d.file_name||'파일')+'</a>';
                     }
                     if (d.body) bubble += '<div data-body class="whitespace-pre-wrap break-words">' + this.esc(d.body) + '</div>';
