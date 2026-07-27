@@ -46,8 +46,14 @@
                     <x-brand.flow-rail class="mt-10" />
                 </div>
 
-                {{-- 하단 지표 --}}
-                <dl class="grid max-w-lg grid-cols-3 gap-4 border-t border-white/10 pt-8">
+                {{-- 하단: 지표 + 모바일 앱 QR --}}
+                {{--
+                    플로팅 위젯 대신 인라인으로 둔다 — 좌하단 고정 위젯은 이 지표를 가린다.
+                    QR 은 데스크톱에서만 의미가 있고(자기 화면의 QR 은 찍을 수 없다),
+                    이 패널 자체가 lg 이상에서만 보이므로 조건이 맞아떨어진다.
+                --}}
+                <div class="flex items-end justify-between gap-8 border-t border-white/10 pt-8">
+                <dl class="grid max-w-lg flex-1 grid-cols-3 gap-4">
                     <div>
                         <dt class="text-xs font-medium text-brand-100/70">Lot 추적</dt>
                         <dd class="mt-1 font-mono text-2xl font-semibold text-white font-tnum">100%</dd>
@@ -61,6 +67,16 @@
                         <dd class="mt-1 font-mono text-2xl font-semibold text-white font-tnum">자동</dd>
                     </div>
                 </dl>
+
+                    <a href="{{ url('/app/') }}" class="shrink-0 text-center">
+                        <span class="block rounded-xl bg-white p-2">
+                            <img src="{{ asset('app/install-qr.png') }}"
+                                 alt="모바일 앱 설치 QR 코드"
+                                 class="h-[92px] w-[92px]" width="92" height="92">
+                        </span>
+                        <span class="mt-2 block text-[11px] text-brand-100/70">모바일 앱 설치</span>
+                    </a>
+                </div>
             </div>
         </aside>
 
@@ -75,6 +91,20 @@
                 </a>
 
                 {{ $slot }}
+
+                {{--
+                    모바일: 좌측 브랜드 패널(QR 이 있는 곳)이 lg 미만에서 숨겨지므로
+                    여기에 설치 링크를 둔다. 자기 화면의 QR 은 찍을 수 없으니 링크가 맞다.
+                --}}
+                <a href="{{ url('/app/') }}"
+                   class="mt-8 flex items-center justify-center gap-2 rounded-md border border-slate-200
+                          bg-white px-4 py-3 text-sm font-semibold text-brand-600 lg:hidden">
+                    <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                         stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="5" y="2" width="14" height="20" rx="2"/><path d="M12 18h.01"/>
+                    </svg>
+                    모바일 앱 설치
+                </a>
 
                 <p class="mt-10 text-center text-xs text-ink-300">
                     © {{ date('Y') }} 삼에스메디컬 · SmartLogis. 인가된 사용자만 접근할 수 있습니다.

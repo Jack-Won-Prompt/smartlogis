@@ -333,6 +333,8 @@
         </div>
     </footer>
 
+    @include('partials.app-install-widget')
+
     @livewireScriptConfig
 </body>
 </html>
