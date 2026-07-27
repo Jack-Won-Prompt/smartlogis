@@ -18,6 +18,11 @@
 <x-app-layout title="채팅" breadcrumb="채팅">
     @push('head')
         <script src="https://js.pusher.com/8.2.0/pusher.min.js"></script>
+        {{-- 메시지 액션바(답장/수정/삭제) — group-hover:flex 미컴파일 대비 raw CSS(빌드 무관) --}}
+        <style>
+            .chat-msg-actions { display: none; }
+            .group:hover .chat-msg-actions { display: flex; }
+        </style>
     @endpush
 
     <div class="flex h-[calc(100vh-8.5rem)] overflow-hidden rounded-2xl border border-line bg-white shadow-sm"
@@ -308,7 +313,7 @@
                     if (d.body) bubble += '<div data-body class="whitespace-pre-wrap break-words">' + this.esc(d.body) + '</div>';
                     bubble += '<span data-edited class="hidden ml-1 text-[10px] ' + (mine?'text-white/60':'text-ink-300') + '">(수정됨)</span>';
                     // 액션 바(답장/수정/삭제) — 위임으로 처리
-                    bubble += '<div class="absolute -top-3 right-1 z-10 hidden items-center gap-0.5 rounded-lg border border-line bg-white p-0.5 shadow-sm group-hover:flex">'
+                    bubble += '<div class="chat-msg-actions absolute -top-3 right-1 z-10 items-center gap-0.5 rounded-lg border border-line bg-white p-0.5 shadow-sm">'
                         + '<button type="button" data-act="reply" class="grid h-6 w-6 place-items-center rounded text-ink-400 hover:bg-surface-2" title="답장">↩</button>'
                         + (mine ? '<button type="button" data-act="edit" class="grid h-6 w-6 place-items-center rounded text-ink-400 hover:bg-surface-2" title="수정">✎</button><button type="button" data-act="delete" class="grid h-6 w-6 place-items-center rounded text-crit-500 hover:bg-crit-100" title="삭제">🗑</button>' : '')
                         + '</div>';

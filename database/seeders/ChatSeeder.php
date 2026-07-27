@@ -114,13 +114,18 @@ class ChatSeeder extends Seeder
             'file_size' => Storage::disk('public')->size($docPath),
         ]);
 
-        // 이미지 첨부(작은 PNG)
+        // 이미지 첨부(유효 PNG). GD 로 생성(없으면 스킵).
         $imgPath = 'messages/샘플-이미지.png';
-        if (! Storage::disk('public')->exists($imgPath)) {
-            $png = (string) base64_decode(
-                'iVBORw0KGgoAAAANSUhEUgAAAEAAAAAwCAIAAACX2m2wAAAAKUlEQVR4nO3BAQ0AAADCoP'.
-                'dPbQ8HFAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAOB0Ay0AAAF6QpS0AAAAAElFTkSuQmCC'
-            );
+        if (! Storage::disk('public')->exists($imgPath) && function_exists('imagecreatetruecolor')) {
+            $im = imagecreatetruecolor(160, 100);
+            $bg = imagecolorallocate($im, 37, 81, 196);
+            $fg = imagecolorallocate($im, 255, 255, 255);
+            imagefilledrectangle($im, 0, 0, 160, 100, $bg);
+            imagestring($im, 5, 40, 42, 'SAMPLE', $fg);
+            ob_start();
+            imagepng($im);
+            $png = (string) ob_get_clean();
+            imagedestroy($im);
             Storage::disk('public')->put($imgPath, $png);
         }
         Message::create([

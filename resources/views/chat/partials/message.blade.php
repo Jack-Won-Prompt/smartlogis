@@ -30,7 +30,7 @@
                 <span data-edited class="{{ $m->isEdited() ? '' : 'hidden' }} ml-1 text-[10px] {{ $mine ? 'text-white/60' : 'text-ink-300' }}">(수정됨)</span>
 
                 {{-- 답장/수정/삭제 — 클릭은 msgList 이벤트 위임으로 처리(동적 추가 메시지도 동작) --}}
-                <div class="absolute -top-3 right-1 z-10 hidden items-center gap-0.5 rounded-lg border border-line bg-white p-0.5 shadow-sm group-hover:flex">
+                <div class="chat-msg-actions absolute -top-3 right-1 z-10 items-center gap-0.5 rounded-lg border border-line bg-white p-0.5 shadow-sm">
                     <button type="button" data-act="reply" class="grid h-6 w-6 place-items-center rounded text-ink-400 hover:bg-surface-2" title="답장">↩</button>
                     @if($mine)
                         <button type="button" data-act="edit" class="grid h-6 w-6 place-items-center rounded text-ink-400 hover:bg-surface-2" title="수정">✎</button>
