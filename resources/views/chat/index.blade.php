@@ -206,6 +206,8 @@
                 pusher: null,
 
                 init() {
+                    this.fitHeight();
+                    window.addEventListener('resize', () => this.fitHeight());
                     this.scrollBottom();
                     this.setupPusher(cfg.pusherKey, cfg.pusherCluster, cfg.convChannels || []);
                     this.$watch('body', () => this.autoGrow());
@@ -228,6 +230,14 @@
                     if (!el) return;
                     el.style.height = 'auto';
                     el.style.height = Math.min(el.scrollHeight, 140) + 'px';
+                },
+                // 채팅 셸을 남은 뷰포트 높이에 맞춰 채움(하단 공백/스크롤 제거, 프레임 모드 포함)
+                fitHeight() {
+                    const el = this.$el;
+                    const top = el.getBoundingClientRect().top;
+                    const main = el.closest('main');
+                    const padB = main ? (parseFloat(getComputedStyle(main).paddingBottom) || 0) : 0;
+                    el.style.height = Math.max(360, Math.floor(window.innerHeight - top - padB)) + 'px';
                 },
                 csrf() { return document.querySelector('meta[name=csrf-token]').content; },
 
