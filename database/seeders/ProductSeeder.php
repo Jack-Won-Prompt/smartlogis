@@ -70,25 +70,32 @@ class ProductSeeder extends Seeder
             $supplier = $suppliers[$i % $supplierCount];
             $purchase = random_int(20_000, 3_000_000);
 
-            $product = Product::create([
-                'product_code' => sprintf('P-%05d', $i + 1),
-                'product_name' => $name,
-                'udi_di' => $this->digits(14),
-                'gtin' => sprintf('0880601%07d', $i + 1),   // 14자리 고정
-                'edi_code' => $this->digits(8),
-                'spec' => 'MODEL-'.random_int(100, 999),
-                'manufacturer' => $supplier->name,
-                'supplier_id' => $supplier->id,
-                'unit' => 'EA',
-                'box_qty' => $boxOptions[array_rand($boxOptions)],
-                'purchase_price' => $purchase,
-                'sales_price' => (int) round($purchase * (random_int(115, 140) / 100)),
-                'storage_type' => $storage,
-                'is_sterile' => $sterile,
-                'use_lot_control' => true,
-                'use_expiry' => true,
-                'is_active' => true,
-            ]);
+            // 멱등: 제품코드 기준 firstOrCreate(재실행 시 중복 삽입 방지)
+            $product = Product::firstOrCreate(
+                ['product_code' => sprintf('P-%05d', $i + 1)],
+                [
+                    'product_name' => $name,
+                    'udi_di' => $this->digits(14),
+                    'gtin' => sprintf('0880601%07d', $i + 1),   // 14자리 고정
+                    'edi_code' => $this->digits(8),
+                    'spec' => 'MODEL-'.random_int(100, 999),
+                    'manufacturer' => $supplier->name,
+                    'supplier_id' => $supplier->id,
+                    'unit' => 'EA',
+                    'box_qty' => $boxOptions[array_rand($boxOptions)],
+                    'purchase_price' => $purchase,
+                    'sales_price' => (int) round($purchase * (random_int(115, 140) / 100)),
+                    'storage_type' => $storage,
+                    'is_sterile' => $sterile,
+                    'use_lot_control' => true,
+                    'use_expiry' => true,
+                    'is_active' => true,
+                ]
+            );
+
+            if (! $product->wasRecentlyCreated) {
+                continue; // 이미 존재하는 제품은 Lot 재생성하지 않음
+            }
 
             // Lot 1~2개. 첫 Lot 은 여유, 일부 제품은 임박 Lot 을 하나 더 둔다.
             $lotCount = random_int(1, 2);

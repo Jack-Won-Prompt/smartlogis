@@ -30,6 +30,11 @@ class StockSeeder extends Seeder
 {
     public function run(): void
     {
+        // 멱등: 개시 재고가 이미 있으면 재실행하지 않음(중복 원장/잔고/안전재고 방지)
+        if (DB::table('stock_balances')->exists()) {
+            return;
+        }
+
         $warehouse = Organization::query()->where('org_type', OrgType::WAREHOUSE)->firstOrFail();
 
         /** @var list<Organization> $hospitals */
