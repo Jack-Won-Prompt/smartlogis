@@ -24,9 +24,18 @@
             .chat-msg-actions { display: none; }
             .group:hover .chat-msg-actions { display: flex; }
             @media (hover: none) { .chat-msg-actions { display: flex; } } /* 터치기기는 hover 불가 → 상시 */
+            /* 액션 버튼 — 흰 배경에 옅은 회색이라 안 보이던 문제 → 진한 회색 + hover 강조 */
+            .chat-act-btn { display: grid; place-items: center; height: 1.5rem; width: 1.5rem;
+                            border-radius: .375rem; color: #475569; font-size: .95rem; line-height: 1; }
+            .chat-act-btn:hover { background: #eef2f7; color: #1e293b; }
+            .chat-act-del { color: #dc2626; }
+            .chat-act-del:hover { background: #fee2e2; color: #b91c1c; }
             /* 첨부 이미지 썸네일 크기 고정(max-h-52 미컴파일 대비) */
             .chat-img { max-width: 260px; max-height: 260px; width: auto; height: auto;
                         border-radius: .5rem; object-fit: contain; display: block; cursor: zoom-in; }
+            /* 이미지 원본 팝업 오버레이(bg-navy/70·z-[60] 미컴파일 대비) */
+            .chat-lightbox { position: fixed; inset: 0; z-index: 60; display: grid; place-items: center;
+                             padding: 1rem; background: rgba(11, 26, 51, .78); }
         </style>
     @endpush
 
@@ -200,6 +209,22 @@
             </div>
         </div>
 
+        {{-- ── 이미지 원본 팝업(라이트박스) ─────────────── --}}
+        <div x-show="lightbox" x-cloak class="chat-lightbox"
+             @click.self="lightbox=null" @keydown.escape.window="lightbox=null">
+            <div class="flex max-h-[92vh] max-w-[92vw] flex-col items-center gap-3">
+                <img :src="lightbox?.url" :alt="lightbox?.name" class="max-h-[80vh] max-w-[92vw] rounded-lg object-contain shadow-lift">
+                <div class="flex items-center gap-2">
+                    <a :href="lightbox?.url" :download="lightbox?.name"
+                       class="inline-flex items-center gap-1.5 rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700">
+                        <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+                        다운로드
+                    </a>
+                    <button @click="lightbox=null" class="rounded-lg bg-white/90 px-4 py-2 text-sm font-medium text-ink-700 hover:bg-white">닫기</button>
+                </div>
+            </div>
+        </div>
+
         {{-- 숨은 폼(1:1 시작 / 그룹 생성 서버 제출용) --}}
         <form x-ref="startForm" method="POST" action="{{ route('chat.store') }}" class="hidden">@csrf<input type="hidden" name="receiver_id" x-ref="startReceiver"></form>
         <form x-ref="groupForm" method="POST" action="{{ route('chat.group') }}" class="hidden">@csrf<input type="hidden" name="name" x-ref="groupNameInput"><div x-ref="groupMembers"></div></form>
@@ -213,7 +238,7 @@
                 q: '', results: [], picked: [], groupName: '',
                 body: '', pendingFiles: [], replyTo: null,
                 othersRead: cfg.othersReadInit || false,
-                pusher: null,
+                pusher: null, lightbox: null,
 
                 init() {
                     this.fitHeight();
@@ -224,6 +249,9 @@
                     // 메시지 액션(답장/수정/삭제) 이벤트 위임 — 서버 렌더 + 동적 추가 메시지 모두 동작
                     const list = this.$refs.msgList;
                     if (list) list.addEventListener('click', (e) => {
+                        // 이미지 클릭 → 원본 팝업(라이트박스)
+                        const img = e.target.closest('img.chat-img');
+                        if (img) { this.openImage(img.getAttribute('src'), img.dataset.name || ''); return; }
                         const btn = e.target.closest('[data-act]');
                         if (!btn) return;
                         const wrap = btn.closest('[data-msg]');
@@ -312,15 +340,15 @@
                     if (d.reply_to) bubble += '<div class="mb-1 rounded bg-black/5 px-2 py-1 text-[11px] opacity-80"><b>' + this.esc(d.reply_to.sender_name||'') + '</b> ' + this.esc((d.reply_to.body||'').slice(0,60)) + '</div>';
                     if (d.file_url) {
                         bubble += d.is_image
-                            ? '<a href="'+d.file_url+'" target="_blank"><img src="'+d.file_url+'" class="chat-img"></a>'
-                            : '<a href="'+d.file_url+'" target="_blank" class="flex items-center gap-1 underline">📎 '+this.esc(d.file_name||'파일')+'</a>';
+                            ? '<img src="'+d.file_url+'" data-name="'+this.esc(d.file_name||'')+'" class="chat-img">'
+                            : '<a href="'+d.file_url+'" download="'+this.esc(d.file_name||'')+'" class="flex items-center gap-1 underline">📎 '+this.esc(d.file_name||'파일')+'</a>';
                     }
                     if (d.body) bubble += '<div data-body class="whitespace-pre-wrap break-words">' + this.esc(d.body) + '</div>';
                     bubble += '<span data-edited class="hidden ml-1 text-[10px] ' + (mine?'text-white/60':'text-ink-300') + '">(수정됨)</span>';
                     // 액션 바(답장/수정/삭제) — 위임으로 처리
                     bubble += '<div class="chat-msg-actions absolute -top-3 right-1 z-10 items-center gap-0.5 rounded-lg border border-line bg-white p-0.5 shadow-sm">'
-                        + '<button type="button" data-act="reply" class="grid h-6 w-6 place-items-center rounded text-ink-400 hover:bg-surface-2" title="답장">↩</button>'
-                        + (mine ? '<button type="button" data-act="edit" class="grid h-6 w-6 place-items-center rounded text-ink-400 hover:bg-surface-2" title="수정">✎</button><button type="button" data-act="delete" class="grid h-6 w-6 place-items-center rounded text-crit-500 hover:bg-crit-100" title="삭제">🗑</button>' : '')
+                        + '<button type="button" data-act="reply" class="chat-act-btn" title="답장">↩</button>'
+                        + (mine ? '<button type="button" data-act="edit" class="chat-act-btn" title="수정">✎</button><button type="button" data-act="delete" class="chat-act-btn chat-act-del" title="삭제">🗑</button>' : '')
                         + '</div>';
                     bubble += '</div>';
                     inner += '<div class="max-w-[70%]">' + bubble + '<div class="mt-0.5 text-[10px] text-ink-300 ' + (mine?'text-right':'') + '">' + this.time(d.created_at) + '</div></div>';
@@ -388,6 +416,8 @@
                     if (added) { e.preventDefault(); if (window.toast) window.toast(added + '개 파일을 첨부했습니다. 전송을 누르세요.', 'info'); }
                 },
                 setReply(id, name, body) { this.replyTo = { id, name, body }; this.$refs.body?.focus(); },
+                // 이미지 원본 팝업(라이트박스) — 다운로드 버튼 포함
+                openImage(url, name) { if (url) this.lightbox = { url, name: name || '이미지' }; },
 
                 async markRead() {
                     // show 재방문 없이 읽음 처리: reply 없이 last_read 갱신은 서버 show 에서. 여기선 배지만 초기화.

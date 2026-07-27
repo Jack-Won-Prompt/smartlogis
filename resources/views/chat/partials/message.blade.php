@@ -19,9 +19,9 @@
                 @endif
                 @if($m->file_path)
                     @if($m->isImage())
-                        <a href="{{ $m->fileUrl() }}" target="_blank"><img src="{{ $m->fileUrl() }}" class="chat-img" alt="{{ $m->file_name }}"></a>
+                        <img src="{{ $m->fileUrl() }}" data-name="{{ $m->file_name }}" class="chat-img" alt="{{ $m->file_name }}">
                     @else
-                        <a href="{{ $m->fileUrl() }}" target="_blank" class="flex items-center gap-1 underline">📎 {{ $m->file_name }} <span class="text-[10px] opacity-70">({{ $m->formattedSize() }})</span></a>
+                        <a href="{{ $m->fileUrl() }}" download="{{ $m->file_name }}" class="flex items-center gap-1 underline">📎 {{ $m->file_name }} <span class="text-[10px] opacity-70">({{ $m->formattedSize() }})</span></a>
                     @endif
                 @endif
                 @if($m->body)
@@ -31,10 +31,10 @@
 
                 {{-- 답장/수정/삭제 — 클릭은 msgList 이벤트 위임으로 처리(동적 추가 메시지도 동작) --}}
                 <div class="chat-msg-actions absolute -top-3 right-1 z-10 items-center gap-0.5 rounded-lg border border-line bg-white p-0.5 shadow-sm">
-                    <button type="button" data-act="reply" class="grid h-6 w-6 place-items-center rounded text-ink-400 hover:bg-surface-2" title="답장">↩</button>
+                    <button type="button" data-act="reply" class="chat-act-btn" title="답장">↩</button>
                     @if($mine)
-                        <button type="button" data-act="edit" class="grid h-6 w-6 place-items-center rounded text-ink-400 hover:bg-surface-2" title="수정">✎</button>
-                        <button type="button" data-act="delete" class="grid h-6 w-6 place-items-center rounded text-crit-500 hover:bg-crit-100" title="삭제">🗑</button>
+                        <button type="button" data-act="edit" class="chat-act-btn" title="수정">✎</button>
+                        <button type="button" data-act="delete" class="chat-act-btn chat-act-del" title="삭제">🗑</button>
                     @endif
                 </div>
             @endif
