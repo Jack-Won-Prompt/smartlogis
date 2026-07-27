@@ -89,7 +89,7 @@ class DashboardController extends ApiController
                 $this->kpi('D-30 유통기한', $expirySoon, 'Lot', 'warn', '/inventory/expiry'),
             ],
             OrgType::SUPPLIER => [
-                $this->kpi('자사 제품', Product::query()->where('is_active', true)->count(), '종', 'ok', '/products'),
+                $this->kpi('자사 제품', Product::query()->where('is_active', true)->count(), '종', 'ok', '/supplier/stocks'),
                 $this->kpi('병원 재고 합계', $stockQty, 'EA', 'ok', '/supplier/stocks'),
                 $this->kpi('부족 발생', $belowSafety, '건', 'crit', '/supplier/shortages'),
                 $this->kpi('진행 중 납품', $this->inboundOpenBySupplierCount($orgId), '건', 'info', '/inbounds'),

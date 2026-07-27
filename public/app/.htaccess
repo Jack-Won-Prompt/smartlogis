@@ -1,0 +1,7 @@
+# APK 다운로드 — 일부 서버가 .apk MIME 을 몰라 텍스트로 열어 버리는 것을 막는다.
+AddType application/vnd.android.package-archive .apk
+
+# 이 디렉터리는 정적 파일만 서빙한다 (Laravel 라우터로 넘기지 않음).
+<IfModule mod_rewrite.c>
+    RewriteEngine Off
+</IfModule>

@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Http\Controllers\Api\V1\AppVersionController;
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\CatalogController;
 use App\Http\Controllers\Api\V1\DashboardController;
@@ -27,6 +28,13 @@ use Illuminate\Support\Facades\Route;
 */
 
 Route::post('/auth/login', [AuthController::class, 'login'])->middleware('throttle:20,1');
+
+/*
+ * 앱 버전 확인 — 인증 없이 접근 가능해야 한다.
+ * 강제 업데이트 대상 구버전은 로그인 자체가 실패할 수 있는데(인증 응답 스키마 변경 등)
+ * 그 상태에서도 "업데이트하세요" 는 띄울 수 있어야 하기 때문이다.
+ */
+Route::get('/app/version', AppVersionController::class)->middleware('throttle:60,1');
 
 Route::middleware('api.token')->group(function () {
 

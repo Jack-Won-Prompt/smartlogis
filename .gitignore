@@ -29,3 +29,6 @@ l12-*.jpeg
 # 로컬 소스/로그(배포 제외)
 /wwGrid
 laravel-*.log
+
+# 앱 설치 파일(APK) — 대용량 바이너리라 git 에 넣지 않고 서버에 직접 업로드한다
+/public/app/*.apk
