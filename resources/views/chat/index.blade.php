@@ -18,10 +18,12 @@
 <x-app-layout title="채팅" breadcrumb="채팅">
     @push('head')
         <script src="https://js.pusher.com/8.2.0/pusher.min.js"></script>
-        {{-- 메시지 액션바(답장/수정/삭제) — group-hover:flex 미컴파일 대비 raw CSS(빌드 무관) --}}
+        {{-- 메시지 액션바(답장/수정/삭제) — group-hover 미컴파일 대비 raw CSS(빌드 무관).
+             hover 로만 노출하면 발견이 어려워 항상 옅게 보이고 hover 시 진해진다(터치기기도 노출). --}}
         <style>
-            .chat-msg-actions { display: none; }
-            .group:hover .chat-msg-actions { display: flex; }
+            .chat-msg-actions { display: flex; opacity: .45; transition: opacity .12s ease; }
+            .group:hover .chat-msg-actions { opacity: 1; }
+            @media (hover: none) { .chat-msg-actions { opacity: 1; } }
         </style>
     @endpush
 

@@ -286,7 +286,13 @@ class ChatController extends Controller
         ];
 
         if ($file !== null) {
-            $data['file_path'] = $file->store('messages', 'public');
+            $path = $file->store('messages', 'public');
+            // 저장 실패(예: 서버 저장소 쓰기 권한 없음)를 조용히 삼키지 않는다 —
+            // file_path 가 빈 값이면 이미지/첨부가 표시되지 않으므로 명확히 에러로 알린다.
+            if (! is_string($path) || $path === '') {
+                abort(500, '파일을 저장하지 못했습니다. 서버 저장소(storage/app/public) 쓰기 권한을 확인해 주세요.');
+            }
+            $data['file_path'] = $path;
             $data['file_name'] = $file->getClientOriginalName();
             $data['file_size'] = $file->getSize();
         }
