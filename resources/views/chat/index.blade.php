@@ -36,6 +36,10 @@
             /* 이미지 원본 팝업 오버레이(bg-navy/70·z-[60] 미컴파일 대비) */
             .chat-lightbox { position: fixed; inset: 0; z-index: 60; display: grid; place-items: center;
                              padding: 1rem; background: rgba(11, 26, 51, .78); }
+            /* 수정 팝오버 — 버튼 옆에 떠서 편집(배경 어둡게 하지 않음, 바깥 클릭으로 닫기) */
+            .chat-pop-backdrop { position: fixed; inset: 0; z-index: 59; background: transparent; }
+            .chat-editpop { position: fixed; z-index: 60; width: 320px; max-width: calc(100vw - 16px);
+                            top: 0; left: 0; }
         </style>
     @endpush
 
@@ -225,18 +229,19 @@
             </div>
         </div>
 
-        {{-- ── 메시지 수정 팝업 ─────────────────────────── --}}
+        {{-- ── 메시지 수정 팝오버(수정 버튼 옆에 떠서 편집) ── --}}
         <template x-if="editing">
-            <div class="chat-lightbox" @click.self="editing=null" @keydown.escape.window="editing=null">
-                <div class="w-full max-w-md rounded-2xl bg-white p-5 shadow-lift">
-                    <h3 class="mb-3 text-base font-bold text-ink-900">메시지 수정</h3>
+            <div>
+                <div class="chat-pop-backdrop" @click="editing=null"></div>
+                <div data-edit-pop class="chat-editpop rounded-xl border border-line bg-white p-3 shadow-lift" @keydown.escape.window="editing=null">
+                    <div class="mb-1.5 text-xs font-semibold text-ink-500">메시지 수정</div>
                     <textarea data-edit-body x-model="editing.body" rows="3"
                               @keydown.enter="if(!$event.shiftKey){$event.preventDefault(); saveEdit();}"
-                              placeholder="메시지 입력 (Enter 저장, Shift+Enter 줄바꿈)"
-                              class="block w-full resize-none rounded-lg border-line bg-surface-1 px-3 py-2 text-sm focus:border-brand-500 focus:ring-2 focus:ring-brand-400/25"></textarea>
-                    <div class="mt-4 flex justify-end gap-2">
-                        <button @click="editing=null" class="rounded-lg px-4 py-2 text-sm text-ink-500 hover:bg-surface-2">취소</button>
-                        <button @click="saveEdit()" class="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700">저장</button>
+                              placeholder="Enter 저장, Shift+Enter 줄바꿈"
+                              class="block w-full resize-none rounded-lg border-line bg-surface-1 px-2.5 py-1.5 text-sm focus:border-brand-500 focus:ring-2 focus:ring-brand-400/25"></textarea>
+                    <div class="mt-2 flex justify-end gap-1.5">
+                        <button @click="editing=null" class="rounded-lg px-3 py-1.5 text-xs text-ink-500 hover:bg-surface-2">취소</button>
+                        <button @click="saveEdit()" class="rounded-lg bg-brand-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-brand-700">저장</button>
                     </div>
                 </div>
             </div>
@@ -276,7 +281,7 @@
                         const id = parseInt(wrap.dataset.msg, 10);
                         const act = btn.dataset.act;
                         if (act === 'reply') this.setReply(id, wrap.dataset.sender || '', (wrap.querySelector('[data-body]')?.textContent || wrap.dataset.file || '').trim());
-                        else if (act === 'edit') this.editMsg(id);
+                        else if (act === 'edit') this.editMsg(id, btn);
                         else if (act === 'delete') this.delMsg(id);
                     });
                 },
@@ -442,11 +447,27 @@
                     if (badge) { badge.textContent = ''; badge.classList.add('hidden'); }
                 },
 
-                // 수정 팝업 열기(현재 본문 채워 표시). Enter 저장 / Esc·취소 닫기.
-                editMsg(id) {
+                // 수정 팝오버 열기 — 수정 버튼 옆에 떠서 편집. Enter 저장 / Esc·취소 닫기.
+                editMsg(id, btn) {
                     const bodyEl = document.querySelector('[data-msg="'+id+'"] [data-body]');
+                    let anchor = btn && btn.getBoundingClientRect ? btn.getBoundingClientRect() : null;
+                    if (!anchor || anchor.width === 0) { // 버튼이 숨김/미지정이면 말풍선 기준
+                        anchor = document.querySelector('[data-msg="'+id+'"] [data-bubble]').getBoundingClientRect();
+                    }
                     this.editing = { id, body: bodyEl ? bodyEl.textContent : '' };
-                    this.$nextTick(() => { const t = document.querySelector('[data-edit-body]'); if (t) { t.focus(); t.select(); } });
+                    this.$nextTick(() => {
+                        const pop = document.querySelector('[data-edit-pop]');
+                        if (pop) {
+                            const w = pop.offsetWidth, h = pop.offsetHeight, m = 8;
+                            let left = Math.max(m, Math.min(anchor.right - w, window.innerWidth - w - m));
+                            let top = anchor.bottom + 6;
+                            if (top + h > window.innerHeight - m) top = Math.max(m, anchor.top - h - 6);
+                            pop.style.left = left + 'px';
+                            pop.style.top = top + 'px';
+                        }
+                        const t = document.querySelector('[data-edit-body]');
+                        if (t) { t.focus(); t.select(); }
+                    });
                 },
                 async saveEdit() {
                     if (!this.editing) return;
