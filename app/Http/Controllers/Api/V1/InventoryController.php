@@ -52,8 +52,34 @@ class InventoryController extends ApiController
 
         $total = DB::query()->fromSub($base, 't')->count();
 
+        // 요약은 **전체 조건 기준**으로 낸다. 앱은 한 페이지(20건)만 갖고 있어
+        // 스스로 합계를 낼 수 없다.
+        $agg = DB::query()->fromSub($base, 't')
+            ->selectRaw('
+                COALESCE(SUM(t.qty), 0) as total_qty,
+                SUM(CASE WHEN t.safety_qty IS NOT NULL AND t.qty < t.safety_qty THEN 1 ELSE 0 END) as crit_cnt,
+                SUM(CASE WHEN t.safety_qty IS NOT NULL AND t.qty >= t.safety_qty
+                          AND t.qty < t.safety_qty * 1.2 THEN 1 ELSE 0 END) as warn_cnt,
+                SUM(CASE WHEN t.safety_qty IS NULL OR t.qty >= t.safety_qty * 1.2 THEN 1 ELSE 0 END) as ok_cnt
+            ')
+            ->first();
+
+        $summary = [
+            'stats' => [
+                $this->stat('품목', $total, '건'),
+                $this->stat('총 수량', number_format((int) ($agg->total_qty ?? 0)), 'EA'),
+                $this->stat('안전재고 미달', (int) ($agg->crit_cnt ?? 0), '건',
+                    ((int) ($agg->crit_cnt ?? 0)) > 0 ? 'crit' : 'ok'),
+            ],
+            'segments' => [
+                $this->segment('충분', (int) ($agg->ok_cnt ?? 0), 'ok'),
+                $this->segment('임박', (int) ($agg->warn_cnt ?? 0), 'warn'),
+                $this->segment('미달', (int) ($agg->crit_cnt ?? 0), 'crit'),
+            ],
+        ];
+
         $rows = (clone $base)
-            ->orderByRaw($request->boolean('below_safety') ? 'SUM(b.qty) asc' : 'p.product_name asc')
+            ->orderByRaw($this->stockSort($request))
             ->forPage($page, $size)
             ->get();
 
@@ -69,7 +95,27 @@ class InventoryController extends ApiController
             'lot_count' => (int) $r->lot_count,
             'safety_qty' => $r->safety_qty !== null ? (int) $r->safety_qty : null,
             'level' => $this->level((int) $r->qty, $r->safety_qty !== null ? (int) $r->safety_qty : null),
-        ])->all(), $total, $page, $size);
+        ])->all(), $total, $page, $size, $summary);
+    }
+
+    /**
+     * 재고 목록 정렬. 화이트리스트로만 받는다(사용자 입력을 SQL 에 그대로 넣지 않는다).
+     *
+     * 기본은 미달 필터가 켜져 있으면 부족한 것부터, 아니면 품목명순이다.
+     */
+    private function stockSort(Request $request): string
+    {
+        return match ($request->string('sort')->toString()) {
+            'qty_desc' => 'SUM(b.qty) desc',
+            'qty_asc' => 'SUM(b.qty) asc',
+            'name' => 'p.product_name asc',
+            // 안전재고 대비 충족률이 낮은 순 — "가장 급한 것" 이 위로.
+            'shortage' => 'CASE WHEN MAX(s.safety_qty) > 0
+                                THEN SUM(b.qty) / MAX(s.safety_qty) ELSE 999 END asc',
+            default => $request->boolean('below_safety')
+                ? 'SUM(b.qty) asc'
+                : 'p.product_name asc',
+        };
     }
 
     /** 특정 위치·제품의 Lot 별 재고 (FEFO 순). */
@@ -131,7 +177,46 @@ class InventoryController extends ApiController
 
         $total = DB::query()->fromSub(clone $base, 't')->count();
 
-        $rows = $base->orderBy('l.expiry_date')->forPage($page, $size)->get();
+        // 임박 구간별 Lot 수 — "얼마나 급한지" 를 목록 스크롤 없이 알 수 있어야 한다.
+        $today = Carbon::today();
+        $agg = DB::query()->fromSub(clone $base, 't')
+            ->selectRaw('
+                COALESCE(SUM(t.qty), 0) as total_qty,
+                SUM(CASE WHEN t.expiry_date < ? THEN 1 ELSE 0 END) as expired_cnt,
+                SUM(CASE WHEN t.expiry_date >= ? AND t.expiry_date <= ? THEN 1 ELSE 0 END) as d30_cnt,
+                SUM(CASE WHEN t.expiry_date > ? AND t.expiry_date <= ? THEN 1 ELSE 0 END) as d60_cnt,
+                SUM(CASE WHEN t.expiry_date > ? THEN 1 ELSE 0 END) as rest_cnt
+            ', [
+                $today->toDateString(),
+                $today->toDateString(), $today->copy()->addDays(30)->toDateString(),
+                $today->copy()->addDays(30)->toDateString(), $today->copy()->addDays(60)->toDateString(),
+                $today->copy()->addDays(60)->toDateString(),
+            ])
+            ->first();
+
+        $expired = (int) ($agg->expired_cnt ?? 0);
+        $summary = [
+            'stats' => [
+                $this->stat('대상 Lot', $total, '건'),
+                $this->stat('총 수량', number_format((int) ($agg->total_qty ?? 0)), 'EA'),
+                $this->stat('기한 경과', $expired, '건', $expired > 0 ? 'crit' : 'ok'),
+            ],
+            'segments' => [
+                $this->segment('경과', $expired, 'crit'),
+                $this->segment('D-30', (int) ($agg->d30_cnt ?? 0), 'warn'),
+                $this->segment('D-60', (int) ($agg->d60_cnt ?? 0), 'info'),
+                $this->segment('그 외', (int) ($agg->rest_cnt ?? 0), 'ok'),
+            ],
+        ];
+
+        $rows = $base
+            ->orderByRaw(match ($request->string('sort')->toString()) {
+                'qty_desc' => 'b.qty desc',
+                'product' => 'p.product_name asc',
+                default => 'l.expiry_date asc',   // 임박순이 기본 — 가장 급한 것부터
+            })
+            ->forPage($page, $size)
+            ->get();
 
         return $this->pagedRaw($rows->map(fn ($r) => [
             'lot_id' => (int) $r->lot_id,
@@ -143,7 +228,7 @@ class InventoryController extends ApiController
             'product_code' => $r->product_code,
             'product_name' => $r->product_name,
             'org_name' => $r->org_name,
-        ])->all(), $total, $page, $size);
+        ])->all(), $total, $page, $size, $summary);
     }
 
     /** 안전재고 미달 목록(병원 × 품목). */
@@ -175,8 +260,20 @@ class InventoryController extends ApiController
                 's.safety_qty', 's.reorder_qty',
                 DB::raw('COALESCE(SUM(b.qty),0) as onhand'),
             )
-            ->orderBy('p.product_name')
+            ->orderByRaw(match ($request->string('sort')->toString()) {
+                // 부족량이 큰 순 — 보충 발주를 어디부터 낼지 정하는 화면이다.
+                'shortage' => '(s.safety_qty - COALESCE(SUM(b.qty),0)) desc',
+                'hospital' => 'h.name asc',
+                default => 'p.product_name asc',
+            })
             ->get();
+
+        // 이 화면은 페이징하지 않는다(미달 품목은 많아야 수백 건).
+        // 그래도 "얼마나 부족한지" 총량은 한눈에 보여야 발주 판단이 선다.
+        $shortageTotal = $rows->sum(fn ($r) => (int) $r->safety_qty - (int) $r->onhand);
+        $reorderTotal = $rows->sum(fn ($r) => (int) $r->reorder_qty);
+        $zeroCnt = $rows->filter(fn ($r) => (int) $r->onhand === 0)->count();
+        $hospitalCnt = $rows->pluck('hospital_id')->unique()->count();
 
         return response()->json([
             'data' => $rows->map(fn ($r) => [
@@ -191,7 +288,20 @@ class InventoryController extends ApiController
                 'shortage' => (int) $r->safety_qty - (int) $r->onhand,
                 'reorder_qty' => (int) $r->reorder_qty,
             ])->all(),
-            'meta' => ['total' => $rows->count()],
+            'summary' => [
+                'stats' => [
+                    $this->stat('미달 품목', $rows->count(), '건',
+                        $rows->count() > 0 ? 'crit' : 'ok'),
+                    $this->stat('부족 수량', number_format($shortageTotal), 'EA', 'crit'),
+                    $this->stat('권장 발주', number_format($reorderTotal), 'EA', 'info'),
+                ],
+                'segments' => [
+                    // 재고가 아예 0 인 건 발주가 아니라 즉시 대응이 필요하다.
+                    $this->segment('재고 없음', $zeroCnt, 'crit'),
+                    $this->segment('부족', $rows->count() - $zeroCnt, 'warn'),
+                ],
+            ],
+            'meta' => ['total' => $rows->count(), 'hospitals' => $hospitalCnt],
         ]);
     }
 

@@ -36,6 +36,29 @@ class UsageController extends ApiController
             ->when($request->date('date_to'), fn ($q, $v) => $q->whereDate('usage_date', '<=', $v))
             ->orderByDesc('id');
 
+        // 본사는 "승인할 게 몇 건이고 얼마인지" 를 먼저 본다.
+        $pendingQ = (clone $query)->reorder()->where('status', UsageStatus::SUBMITTED->value);
+        $pendingCnt = (clone $pendingQ)->count();
+        $pendingAmt = (float) (clone $pendingQ)->sum('total_amount');
+
+        $summary = $this->statusSummary($query, [
+            UsageStatus::DRAFT->value => ['작성', 'hold'],
+            UsageStatus::SUBMITTED->value => ['승인 대기', 'warn'],
+            UsageStatus::APPROVED->value => ['승인', 'ok'],
+            UsageStatus::REJECTED->value => ['반려', 'crit'],
+        ], [
+            $this->stat('전체', (clone $query)->reorder()->count(), '건'),
+            $this->stat('승인 대기', $pendingCnt, '건', $pendingCnt > 0 ? 'warn' : 'ok'),
+            $this->stat('대기 금액', $this->wonShort($pendingAmt), null, 'info'),
+        ]);
+
+        $query->reorder()->when(true, fn ($q) => match ($request->string('sort')->toString()) {
+            'oldest' => $q->orderBy('id'),
+            'amount_desc' => $q->orderByDesc('total_amount'),
+            'usage_date' => $q->orderByDesc('usage_date')->orderByDesc('id'),
+            default => $q->orderByDesc('id'),
+        });
+
         $paginator = $query->paginate($this->pageSize($request), ['*'], 'page', max($request->integer('page', 1), 1));
 
         return $this->paged($paginator, fn (UsageReport $r) => [
@@ -48,7 +71,7 @@ class UsageController extends ApiController
             'usage_date' => $r->usage_date->toDateString(),
             'items_count' => $r->items_count,
             'total_amount' => (float) $r->total_amount,
-        ]);
+        ], $summary);
     }
 
     public function show(Request $request, int $id): JsonResponse

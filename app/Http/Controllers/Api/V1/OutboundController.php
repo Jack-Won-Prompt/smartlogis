@@ -39,6 +39,28 @@ class OutboundController extends ApiController
             ]))
             ->orderByDesc('id');
 
+        // 출고는 파이프라인이라 "지금 어디에 얼마나 걸려 있는지" 가 중요하다.
+        $open = (clone $query)->reorder()->whereNotIn('status', [
+            OutboundStatus::DELIVERED->value, OutboundStatus::CANCELED->value,
+        ])->count();
+
+        $summary = $this->statusSummary($query, [
+            OutboundStatus::DRAFT->value => ['작성', 'hold'],
+            OutboundStatus::APPROVED->value => ['승인', 'info'],
+            OutboundStatus::PICKING->value => ['피킹', 'warn'],
+            OutboundStatus::SHIPPED->value => ['배송중', 'warn'],
+            OutboundStatus::DELIVERED->value => ['완료', 'ok'],
+        ], [
+            $this->stat('전체', (clone $query)->reorder()->count(), '건'),
+            $this->stat('진행 중', $open, '건', $open > 0 ? 'warn' : 'ok'),
+        ]);
+
+        $query->reorder()->when(true, fn ($q) => match ($request->string('sort')->toString()) {
+            'oldest' => $q->orderBy('id'),
+            'planned' => $q->orderBy('planned_date')->orderByDesc('id'),
+            default => $q->orderByDesc('id'),
+        });
+
         $paginator = $query->paginate($this->pageSize($request), ['*'], 'page', max($request->integer('page', 1), 1));
 
         return $this->paged($paginator, fn (Outbound $o) => [
@@ -55,7 +77,7 @@ class OutboundController extends ApiController
             'shipped_at' => $o->shipped_at?->toIso8601String(),
             'delivered_at' => $o->delivered_at?->toIso8601String(),
             'items_count' => $o->items_count,
-        ]);
+        ], $summary);
     }
 
     public function show(Request $request, int $id): JsonResponse

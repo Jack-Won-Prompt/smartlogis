@@ -42,7 +42,29 @@ class SupplierController extends ApiController
 
         $total = DB::query()->fromSub(clone $base, 't')->count();
 
-        $rows = $base->orderByDesc(DB::raw('SUM(b.qty)'))->forPage($page, $size)->get();
+        // 공급사가 알고 싶은 것은 "내 물건이 병원에 얼마나 깔려 있나" 다.
+        // 품목 수만으로는 알 수 없어 총 수량과 깔린 병원 수를 함께 낸다.
+        $agg = DB::query()->fromSub(clone $base, 't')
+            ->selectRaw('COALESCE(SUM(t.qty), 0) as total_qty, COALESCE(MAX(t.hospital_count), 0) as max_hosp')
+            ->first();
+
+        $summary = [
+            'stats' => [
+                $this->stat('자사 품목', $total, '종'),
+                $this->stat('병원 재고', number_format((int) ($agg->total_qty ?? 0)), 'EA', 'ok'),
+                $this->stat('최다 배치', (int) ($agg->max_hosp ?? 0), '개 병원', 'info'),
+            ],
+        ];
+
+        $rows = $base
+            ->orderByRaw(match ($request->string('sort')->toString()) {
+                'qty_asc' => 'SUM(b.qty) asc',
+                'hospitals' => 'COUNT(DISTINCT b.org_id) desc',
+                'name' => 'p.product_name asc',
+                default => 'SUM(b.qty) desc',   // 많이 깔린 것부터
+            })
+            ->forPage($page, $size)
+            ->get();
 
         return $this->pagedRaw($rows->map(fn ($r) => [
             'product_id' => (int) $r->product_id,
@@ -51,7 +73,7 @@ class SupplierController extends ApiController
             'unit' => $r->unit,
             'qty' => (int) $r->qty,
             'hospital_count' => (int) $r->hospital_count,
-        ])->all(), $total, $page, $size);
+        ])->all(), $total, $page, $size, $summary);
     }
 
     /** 특정 제품의 병원별 분포(상세 시트). */

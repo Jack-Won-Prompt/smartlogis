@@ -40,6 +40,26 @@ class InboundController extends ApiController
             ]))
             ->orderByDesc('id');
 
+        // 검수해야 할 게 몇 건인지가 이 화면의 핵심이라 앞에 세운다.
+        $receivable = (clone $query)->reorder()->whereIn('status', [
+            InboundStatus::PLANNED->value, InboundStatus::RECEIVING->value,
+        ])->count();
+
+        $summary = $this->statusSummary($query, [
+            InboundStatus::PLANNED->value => ['예정', 'info'],
+            InboundStatus::RECEIVING->value => ['검수중', 'warn'],
+            InboundStatus::CONFIRMED->value => ['확정', 'ok'],
+        ], [
+            $this->stat('전체', (clone $query)->reorder()->count(), '건'),
+            $this->stat('검수 대기', $receivable, '건', $receivable > 0 ? 'warn' : 'ok'),
+        ]);
+
+        $query->reorder()->when(true, fn ($q) => match ($request->string('sort')->toString()) {
+            'oldest' => $q->orderBy('id'),
+            'planned' => $q->orderBy('planned_date')->orderByDesc('id'),
+            default => $q->orderByDesc('id'),   // 최신순
+        });
+
         $paginator = $query->paginate($this->pageSize($request), ['*'], 'page', max($request->integer('page', 1), 1));
 
         return $this->paged($paginator, fn (Inbound $i) => [
@@ -55,7 +75,7 @@ class InboundController extends ApiController
             'planned_date' => $i->planned_date?->toDateString(),
             'confirmed_at' => $i->confirmed_at?->toIso8601String(),
             'items_count' => $i->items_count,
-        ]);
+        ], $summary);
     }
 
     public function show(Request $request, int $id): JsonResponse
