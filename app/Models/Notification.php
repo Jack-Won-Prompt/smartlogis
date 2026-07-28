@@ -75,6 +75,10 @@ class Notification extends Model
             $q->where('target_org_id', $user->org_id)
                 ->orWhere(function (Builder $sub) use ($user) {
                     $sub->whereNull('target_org_id')->where('target_role', $user->role);
+                })
+                // 전체 공지(대상 조직·역할 미지정) — 모든 사용자에게 노출
+                ->orWhere(function (Builder $sub) {
+                    $sub->whereNull('target_org_id')->whereNull('target_role');
                 });
         });
     }

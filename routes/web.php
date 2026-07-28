@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Http\Controllers\AccountDeletionController;
 use App\Http\Controllers\Admin\AccessLogController;
+use App\Http\Controllers\Admin\AnnouncementController;
 use App\Http\Controllers\Admin\AuditLogController;
 use App\Http\Controllers\Admin\SystemController;
 use App\Http\Controllers\BarcodeController;
@@ -171,6 +172,10 @@ Route::middleware('auth')->group(function () {
 
     // 감사 로그 / 시스템 관리 — 본사 전용
     Route::middleware('role:HQ')->prefix('admin')->name('admin.')->group(function () {
+        // 공지사항 발송(FCM 푸시)
+        Route::get('/announcements', [AnnouncementController::class, 'create'])->name('announcements');
+        Route::post('/announcements', [AnnouncementController::class, 'store'])->name('announcements.store');
+
         Route::get('/audit-logs', [AuditLogController::class, 'index'])->name('audit-logs');
         Route::get('/audit-logs/data', [AuditLogController::class, 'data'])->name('audit-logs.data');
 

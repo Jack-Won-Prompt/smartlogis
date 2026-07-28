@@ -17,6 +17,7 @@ enum NotiType: string implements HasLabel
     case USAGE_REJECTED = 'USAGE_REJECTED';
     case INBOUND_DELAY = 'INBOUND_DELAY';
     case RECALL = 'RECALL';
+    case NOTICE = 'NOTICE';
 
     public function label(): string
     {
@@ -27,6 +28,7 @@ enum NotiType: string implements HasLabel
             self::USAGE_REJECTED => '사용분 반려',
             self::INBOUND_DELAY => '입고 지연',
             self::RECALL => '리콜',
+            self::NOTICE => '공지사항',
         };
     }
 }
