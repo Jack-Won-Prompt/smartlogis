@@ -105,17 +105,33 @@ class AuthController extends ApiController
         return $this->ok('로그아웃되었습니다.');
     }
 
-    /** 푸시 토큰 등록/갱신 (알림 발송 준비용). */
+    /**
+     * 푸시 토큰 등록/갱신.
+     *
+     * FCM 토큰은 앱 재설치·데이터 삭제·장기 미사용으로 바뀐다. 앱이 갱신을
+     * 감지할 때마다 호출하므로 같은 값이 반복해 들어와도 문제없어야 한다.
+     */
     public function pushToken(Request $request): JsonResponse
     {
         $validated = $request->validate([
             'push_token' => ['required', 'string', 'max:255'],
+            'platform' => ['nullable', 'string', 'in:android,ios'],
         ]);
 
         $token = $request->attributes->get('api_token');
 
         if ($token instanceof ApiToken) {
-            $token->update(['push_token' => $validated['push_token']]);
+            // 같은 푸시 토큰이 다른 기기(다른 api_token)에 남아 있으면 중복 발송이
+            // 된다. 기기를 바꿔 로그인한 경우가 이에 해당하므로 이전 것을 비운다.
+            ApiToken::query()
+                ->where('push_token', $validated['push_token'])
+                ->whereKeyNot($token->getKey())
+                ->update(['push_token' => null]);
+
+            $token->update(array_filter([
+                'push_token' => $validated['push_token'],
+                'platform' => $validated['platform'] ?? null,
+            ]));
         }
 
         return $this->ok('푸시 토큰이 등록되었습니다.');

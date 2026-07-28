@@ -7,6 +7,7 @@ namespace App\Providers;
 use App\Enums\AuditAction;
 use App\Models\AuditLog;
 use App\Models\Inbound;
+use App\Models\Notification;
 use App\Models\Organization;
 use App\Models\Outbound;
 use App\Models\Product;
@@ -15,6 +16,7 @@ use App\Models\Stocktake;
 use App\Models\UsageReport;
 use App\Models\User;
 use App\Observers\AuditLogObserver;
+use App\Observers\NotificationPushObserver;
 use Illuminate\Auth\Events\Login;
 use Illuminate\Auth\Events\Logout;
 use Illuminate\Database\Eloquent\Model;
@@ -49,6 +51,11 @@ class AppServiceProvider extends ServiceProvider
             UsageReport::class, Inbound::class, Outbound::class, Stocktake::class] as $model) {
             $model::observe(AuditLogObserver::class);
         }
+
+        // 알림이 생기면 자동으로 푸시를 보낸다.
+        // 알림 생성 지점이 여러 서비스에 흩어져 있어, 각 지점에서 호출하게 하면
+        // 새 알림을 추가할 때 푸시를 빠뜨린다. 여기 한 곳으로 묶는다.
+        Notification::observe(NotificationPushObserver::class);
 
         // 로그인/로그아웃 감사 기록.
         Event::listen(Login::class, fn (Login $e) => AuditLog::record(
