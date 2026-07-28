@@ -326,10 +326,19 @@
             <div class="flex items-center gap-3">
                 <img src="{{ asset('images/smartlogis_300x100.png') }}" alt="삼에스메디컬 SmartLogis" class="w-auto object-contain">
             </div>
-            <p class="text-center text-sm text-ink-400 sm:text-right">
-                © {{ date('Y') }} 삼에스메디컬 · SmartLogis. 의료 간납 물류 관제 시스템.<br class="sm:hidden">
-                <span class="hidden sm:inline"> · </span>인가된 사용자만 접근할 수 있습니다.
-            </p>
+            <div class="text-center sm:text-right">
+                <div class="mb-2 flex flex-wrap items-center justify-center gap-3 text-sm text-ink-500 sm:justify-end">
+                    <a href="{{ route('legal.privacy') }}" class="hover:text-brand-600">개인정보처리방침</a>
+                    <span class="text-ink-200">·</span>
+                    <a href="{{ route('legal.terms') }}" class="hover:text-brand-600">이용약관</a>
+                    <span class="text-ink-200">·</span>
+                    <a href="{{ route('account.delete') }}" class="hover:text-brand-600">계정 삭제 요청</a>
+                </div>
+                <p class="text-sm text-ink-400">
+                    © {{ date('Y') }} 삼에스메디컬 · SmartLogis. 의료 간납 물류 관제 시스템.<br class="sm:hidden">
+                    <span class="hidden sm:inline"> · </span>인가된 사용자만 접근할 수 있습니다.
+                </p>
+            </div>
         </div>
     </footer>
 

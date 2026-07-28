@@ -106,7 +106,14 @@
                     모바일 앱 설치
                 </a>
 
-                <p class="mt-10 text-center text-xs text-ink-300">
+                <div class="mt-10 flex items-center justify-center gap-3 text-xs text-ink-400">
+                    <a href="{{ route('legal.privacy') }}" class="hover:text-brand-600">개인정보처리방침</a>
+                    <span class="text-ink-200">·</span>
+                    <a href="{{ route('legal.terms') }}" class="hover:text-brand-600">이용약관</a>
+                    <span class="text-ink-200">·</span>
+                    <a href="{{ route('account.delete') }}" class="hover:text-brand-600">계정 삭제 요청</a>
+                </div>
+                <p class="mt-3 text-center text-xs text-ink-300">
                     © {{ date('Y') }} 삼에스메디컬 · SmartLogis. 인가된 사용자만 접근할 수 있습니다.
                 </p>
             </div>

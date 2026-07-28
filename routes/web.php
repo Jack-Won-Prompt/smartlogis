@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Http\Controllers\AccountDeletionController;
 use App\Http\Controllers\Admin\AccessLogController;
 use App\Http\Controllers\Admin\AuditLogController;
 use App\Http\Controllers\Admin\SystemController;
@@ -13,6 +14,7 @@ use App\Http\Controllers\Inventory\ExpiryController;
 use App\Http\Controllers\Inventory\LotTraceController;
 use App\Http\Controllers\Inventory\StockStatusController;
 use App\Http\Controllers\Inventory\StocktakeController;
+use App\Http\Controllers\LegalController;
 use App\Http\Controllers\Master\OrganizationMasterController;
 use App\Http\Controllers\Master\ProductMasterController;
 use App\Http\Controllers\Master\SafetyStockMasterController;
@@ -40,6 +42,12 @@ Route::get('/', function () {
         ? redirect()->route('workspace')
         : view('welcome');
 })->name('welcome');
+
+// 공개 법적 고지 — 로그인 불필요(플레이스토어 심사용 공개 URL)
+Route::get('/privacy', [LegalController::class, 'privacy'])->name('legal.privacy');
+Route::get('/terms', [LegalController::class, 'terms'])->name('legal.terms');
+Route::get('/account/delete', [AccountDeletionController::class, 'create'])->name('account.delete');
+Route::post('/account/delete', [AccountDeletionController::class, 'store'])->name('account.delete.submit');
 
 Route::middleware('auth')->group(function () {
     // MDI 탭 워크스페이스(셸) — 메뉴 클릭 시 화면이 탭(iframe)으로 열린다.
