@@ -48,7 +48,9 @@
                     { title:'Lot', field:'lot_no', width:120 },
                     { title:'유통기한', field:'expiry_date', width:130 },
                     { title:'안전재고', field:'safety_qty', editor:'number', width:110 },
-                    { title:'현재고', field:'qty', editor:'number', width:120 },
+                    { title:'현재고', field:'qty', editor:'number', width:110 },
+                    { title:'예약', field:'reserved_qty', width:90 },
+                    { title:'가용재고', field:'available_qty', width:110 },
                 ],
             });
 

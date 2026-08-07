@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Enums\OutboundStatus;
 use App\Enums\RefType;
 use App\Enums\TxType;
 use App\Exceptions\DomainException;
@@ -161,5 +162,28 @@ class StockService
         return (int) DB::table('stock_balances')
             ->where('org_id', $orgId)->where('product_id', $productId)
             ->sum('qty');
+    }
+
+    /**
+     * 예약 수량 — 승인·피킹 중이지만 아직 출고(SHIPPED)되지 않아 재고에서
+     * 빠지지 않은 출고분. 가용재고 계산에 사용한다.
+     */
+    public function reservedQty(int $orgId, int $productId): int
+    {
+        return (int) DB::table('outbound_items as oi')
+            ->join('outbounds as o', 'o.id', '=', 'oi.outbound_id')
+            ->where('o.warehouse_id', $orgId)
+            ->where('oi.product_id', $productId)
+            ->whereIn('o.status', [OutboundStatus::APPROVED->value, OutboundStatus::PICKING->value])
+            ->sum('oi.qty');
+    }
+
+    /**
+     * 가용재고 = 총 현재고 − 예약(승인·피킹 중 미출고)분. 음수는 0으로 본다.
+     * 제안서의 "가용재고(승인분 제외)" 정의를 서버 단일 진입점으로 제공한다.
+     */
+    public function availableQty(int $orgId, int $productId): int
+    {
+        return max(0, $this->totalBalance($orgId, $productId) - $this->reservedQty($orgId, $productId));
     }
 }

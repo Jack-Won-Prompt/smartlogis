@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Inventory;
 
 use App\Enums\OrgType;
+use App\Enums\OutboundStatus;
 use App\Http\Controllers\Controller;
 use App\Models\StockBalance;
 use Illuminate\Http\JsonResponse;
@@ -34,11 +35,36 @@ class StockStatusController extends Controller
         $size = min(max($request->integer('size', 10), 1), 100);
         $p = $query->paginate($size, ['*'], 'page', $request->integer('page', 1));
 
-        // 병원 안전재고(대비 게이지) 조회 대상: 각 행의 hospital+product
+        // 예약(승인·피킹 중 미출고) 수량을 (창고, 제품) 단위로 한 번에 집계 → 가용재고 계산.
+        $orgProductKeys = $p->getCollection()
+            ->map(fn (StockBalance $b) => [$b->org_id, $b->product_id])->unique()->values();
+        $reservedMap = [];
+        if ($orgProductKeys->isNotEmpty()) {
+            $rows = DB::table('outbound_items as oi')
+                ->join('outbounds as o', 'o.id', '=', 'oi.outbound_id')
+                ->whereIn('o.status', [OutboundStatus::APPROVED->value, OutboundStatus::PICKING->value])
+                ->whereIn('o.warehouse_id', $orgProductKeys->pluck(0)->unique()->all())
+                ->whereIn('oi.product_id', $orgProductKeys->pluck(1)->unique()->all())
+                ->groupBy('o.warehouse_id', 'oi.product_id')
+                ->get(['o.warehouse_id', 'oi.product_id', DB::raw('SUM(oi.qty) as reserved')]);
+            foreach ($rows as $r) {
+                $reservedMap["{$r->warehouse_id}:{$r->product_id}"] = (int) $r->reserved;
+            }
+        }
+        // (창고, 제품) 총 현재고 — 가용 = 총재고 − 예약.
+        $totalMap = [];
+        foreach ($orgProductKeys as [$oid, $pid]) {
+            $totalMap["{$oid}:{$pid}"] = (int) StockBalance::query()
+                ->where('org_id', $oid)->where('product_id', $pid)->sum('qty');
+        }
+
         return response()->json([
             'last_page' => $p->lastPage(),
             'total' => $p->total(),
-            'data' => $p->getCollection()->map(function (StockBalance $b) use ($today) {
+            'data' => $p->getCollection()->map(function (StockBalance $b) use ($today, $reservedMap, $totalMap) {
+                $opKey = "{$b->org_id}:{$b->product_id}";
+                $reserved = $reservedMap[$opKey] ?? 0;
+                $available = max(0, ($totalMap[$opKey] ?? 0) - $reserved);
                 $days = $b->lot?->expiry_date
                     ? (int) Carbon::parse($today)->diffInDays($b->lot->expiry_date, false)
                     : null;
@@ -55,6 +81,8 @@ class StockStatusController extends Controller
                     'expiry_date' => $b->lot->expiry_date?->toDateString(),
                     'expiry_days' => $days,
                     'qty' => $b->qty,
+                    'reserved_qty' => $reserved,   // 품목 단위 예약(승인·피킹 중)
+                    'available_qty' => $available, // 품목 단위 가용재고(총−예약)
                     'safety_qty' => $safety,
                 ];
             })->all(),
