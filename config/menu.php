@@ -48,6 +48,7 @@ return [
         ]],
         ['리포트', 'won', [
             ['채널별 매출', 'reports.channel-sales', [OrgType::HQ]],
+            ['상품분석', 'reports.product-analysis', [OrgType::HQ]],
         ]],
         ['공급사', 'factory', [
             ['자사 재고', 'supplier.stocks', [OrgType::SUPPLIER, OrgType::HQ]],

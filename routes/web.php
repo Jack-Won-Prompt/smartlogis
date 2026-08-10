@@ -187,6 +187,8 @@ Route::middleware('auth')->group(function () {
     Route::middleware('role:HQ')->prefix('reports')->name('reports.')->controller(ReportController::class)->group(function () {
         Route::get('/channel-sales', 'channelSales')->name('channel-sales');
         Route::get('/channel-sales/data', 'channelSalesData')->name('channel-sales.data');
+        Route::get('/product-analysis', 'productAnalysis')->name('product-analysis');
+        Route::get('/product-analysis/data', 'productAnalysisData')->name('product-analysis.data');
     });
 
     Route::middleware('role:HQ')->prefix('admin')->name('admin.')->group(function () {
