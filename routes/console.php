@@ -16,3 +16,6 @@ Schedule::command('expiry:alert')->dailyAt('06:00')->withoutOverlapping();
 
 // 자동 보충 점검 — 매일 05:30
 Schedule::command('replenishment:check')->dailyAt('05:30')->withoutOverlapping();
+
+// 사용/반납 지연 리마인더 — 매일 06:30(배송완료 후 30일 무응답)
+Schedule::command('usage:close-reminder')->dailyAt('06:30')->withoutOverlapping();

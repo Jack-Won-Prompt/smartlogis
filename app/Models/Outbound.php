@@ -44,6 +44,7 @@ class Outbound extends Model
         'planned_date',
         'shipped_at',
         'delivered_at',
+        'close_reminded_at',
         'memo',
         'created_by',
     ];
@@ -59,6 +60,7 @@ class Outbound extends Model
             'planned_date' => 'date',
             'shipped_at' => 'datetime',
             'delivered_at' => 'datetime',
+            'close_reminded_at' => 'datetime',
         ];
     }
 

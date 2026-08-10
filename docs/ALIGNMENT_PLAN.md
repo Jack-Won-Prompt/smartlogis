@@ -93,8 +93,8 @@
 - [x] **B-0 가용재고** — `StockService::reservedQty/availableQty` + 재고현황 컬럼 + Pest (커밋 `db9265b`)
 - [x] **B-1 조직모델·용어** — `OrgType::LIFE`(라이프사이언스=요청) additive 추가, 스코프·대시보드·메뉴·라우트·시더·테스트 (커밋 `9b58fac`, 109 passed)
 - [x] **B-2 반납** — `TxType::RETURN_TO_WH(+)`·`RefType::RETURN`·`ReturnStatus` + `stock_returns`/`stock_return_items` + `ReturnService`(등록→배송→수령확인, 병원↓·창고↑ 원자) + 화면(입출고>반납 처리) + Pest 4건. 113 passed.
-- [ ] B-3 소급·사후 등록
-- [ ] B-4 30일 마감·리마인더
+- [x] **B-3 소급·사후 등록** — LIFE가 병원 선택해 소급 사용분 등록 → HQ 승인 흐름(결정: HQ 승인). 등록화면 병원선택·동적재고. Pest 2건. (커밋 `7eeb1d7`)
+- [x] **B-4 30일 마감·리마인더** — `usage:close-reminder` 배치(배송완료 후 30일 무응답 → 지연 알림, 중복방지 `close_reminded_at`) + 스케줄 등록. `NotiType::USAGE_OVERDUE`. Pest 1건. 116 passed.
 - [ ] B-5 채널매출·상품분석·QR
 - [ ] B-6 안전재고 자동추천
 - [ ] B-7 알림톡·PWA (결정 후)
