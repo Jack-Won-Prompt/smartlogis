@@ -95,8 +95,8 @@
 - [x] **B-2 반납** — `TxType::RETURN_TO_WH(+)`·`RefType::RETURN`·`ReturnStatus` + `stock_returns`/`stock_return_items` + `ReturnService`(등록→배송→수령확인, 병원↓·창고↑ 원자) + 화면(입출고>반납 처리) + Pest 4건. 113 passed.
 - [x] **B-3 소급·사후 등록** — LIFE가 병원 선택해 소급 사용분 등록 → HQ 승인 흐름(결정: HQ 승인). 등록화면 병원선택·동적재고. Pest 2건. (커밋 `7eeb1d7`)
 - [x] **B-4 30일 마감·리마인더** — `usage:close-reminder` 배치(배송완료 후 30일 무응답 → 지연 알림, 중복방지 `close_reminded_at`) + 스케줄 등록. `NotiType::USAGE_OVERDUE`. Pest 1건. 116 passed.
-- [ ] B-5 채널매출·상품분석·QR
-- [ ] B-6 안전재고 자동추천
-- [ ] B-7 알림톡·PWA (결정 후)
+- [x] **B-5 채널매출·상품분석·QR** — 채널별 매출(SalesChannel+리포트+도넛), 상품분석(사용량·매출·현재고·회전), QR 라벨(endroid/qr-code, GS1). Pest 6건.
+- [x] **B-6 안전재고 자동추천** — 최근 N개월 승인 사용량 월평균×안전계수(병원=선납창고 단위=창고별 차등). Pest 1건.
+- [x] **B-7 알림(웹 Pusher + FCM + 이메일)** — 결정: 카카오 대신 웹 Pusher 실시간(사용자 개인 채널) + 기존 FCM + 중요(위험/공지) 이메일. Pest 3건. (PWA·Supabase 전환 비채택)
 
 > 참고: `phpstan analyse app` 은 모바일 API(Api/V1)의 **기존 부채 19건**(missingType/nullsafe)이 있으며 이는 정렬 작업과 무관(master 동일). 필요 시 별도 클린업.

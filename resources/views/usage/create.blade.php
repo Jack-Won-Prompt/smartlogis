@@ -38,6 +38,14 @@
                     <label class="mb-1 block text-xs font-medium text-ink-500">사용일 *</label>
                     <input type="date" x-model="usage_date" class="rounded-lg border-line py-2 text-sm focus:border-brand-500 focus:ring-2 focus:ring-brand-400/25">
                 </div>
+                <div>
+                    <label class="mb-1 block text-xs font-medium text-ink-500">매출 채널</label>
+                    <select x-model="sales_channel" class="rounded-lg border-line py-2 text-sm focus:border-brand-500 focus:ring-2 focus:ring-brand-400/25">
+                        @foreach(\App\Enums\SalesChannel::cases() as $c)
+                            <option value="{{ $c->value }}" @selected($c === \App\Enums\SalesChannel::DIRECT)>{{ $c->label() }}</option>
+                        @endforeach
+                    </select>
+                </div>
                 <div class="min-w-[240px] flex-1">
                     <label class="mb-1 block text-xs font-medium text-ink-500">바코드 스캔</label>
                     <x-scan-input @scan:matched="addFromScan($event.detail)" @scan:unmatched="window.toast($event.detail.message,'warn')" />
@@ -95,6 +103,7 @@
         function usageCreate(){
             return {
                 usage_date: new Date().toISOString().slice(0,10),
+                sales_channel: 'DIRECT',
                 stock: @json($stock),
                 isLife: @json($isLife),
                 hospitalId: '',
@@ -124,7 +133,7 @@
                 async submitReport(){
                     if(this.isLife && !this.hospitalId){ window.toast('대상 병원을 선택하세요.','warn'); return; }
                     this.saving=true;
-                    const payload = { usage_date:this.usage_date, items:this.items.map(it=>({product_id:it.product_id, lot_id:it.lot_id, qty:it.qty, dept:it.dept})) };
+                    const payload = { usage_date:this.usage_date, sales_channel:this.sales_channel, items:this.items.map(it=>({product_id:it.product_id, lot_id:it.lot_id, qty:it.qty, dept:it.dept})) };
                     if(this.isLife){ payload.hospital_id = +this.hospitalId; }
                     const res = await fetch('{{ route('usages.store') }}', { method:'POST', headers:{'Content-Type':'application/json','X-CSRF-TOKEN':document.querySelector('meta[name=csrf-token]').content,Accept:'application/json'}, body: JSON.stringify(payload) });
                     const data = await res.json();

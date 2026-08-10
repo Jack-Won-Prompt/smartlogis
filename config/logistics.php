@@ -11,4 +11,8 @@ declare(strict_types=1);
 return [
     // 병원 출고(배송완료) 후 이 일수 경과까지 사용/반납 확정이 없으면 지연 리마인더.
     'usage_close_days' => (int) env('USAGE_CLOSE_DAYS', 30),
+
+    // 안전재고 자동추천: 최근 N개월 승인 사용량의 월평균 × 안전계수.
+    'safety_months' => (int) env('SAFETY_MONTHS', 3),
+    'safety_factor' => (float) env('SAFETY_FACTOR', 1.0),
 ];

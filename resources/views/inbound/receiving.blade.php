@@ -37,6 +37,7 @@
             </div>
             <div class="flex justify-end gap-2 border-t border-line px-6 py-4">
                 <button @click="show=false" class="rounded-xl border border-line px-4 py-2.5 text-sm font-semibold text-ink-600 hover:bg-surface-2">닫기</button>
+                <button type="button" @click="window.open(`/inbounds/${doc.id}/labels`,'_blank')" class="rounded-xl border border-line px-4 py-2.5 text-sm font-semibold text-brand-600 hover:bg-brand-50">🏷 라벨 출력</button>
                 <button @click="confirm()" :disabled="saving" class="rounded-xl bg-brand-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-brand-700 disabled:opacity-50">입고 확정</button>
             </div>
         </div>

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Enums\SalesChannel;
 use App\Enums\UsageStatus;
 use App\Models\Scopes\HospitalScope;
 use Database\Factories\UsageReportFactory;
@@ -36,6 +37,7 @@ class UsageReport extends Model
         'hospital_id',
         'status',
         'usage_date',
+        'sales_channel',
         'submitted_at',
         'approved_at',
         'approved_by',
@@ -52,6 +54,7 @@ class UsageReport extends Model
         return [
             'status' => UsageStatus::class,
             'usage_date' => 'date',
+            'sales_channel' => SalesChannel::class,
             'submitted_at' => 'datetime',
             'approved_at' => 'datetime',
             'total_amount' => 'decimal:2',

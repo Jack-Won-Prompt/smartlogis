@@ -131,7 +131,7 @@
                 <a href="{{ \Illuminate\Support\Facades\Route::has('notifications.index') ? route('notifications.index') : '#' }}"
                    class="relative grid h-9 w-9 place-items-center rounded-lg text-ink-500 hover:bg-surface-2">
                     <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9M13.5 21a1.7 1.7 0 0 1-3 0"/></svg>
-                    <span class="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-brand-500 ring-2 ring-surface-1"></span>
+                    <span id="noti-dot" class="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-brand-500 ring-2 ring-surface-1"></span>
                 </a>
 
                 {{-- 조직 배지 --}}
@@ -178,6 +178,31 @@
     @stack('scripts')
     {{-- 모든 HTML select 를 검색형(자동완성) 콤보로 확장 --}}
     <script src="{{ asset('js/autoselect.js') }}?v={{ filemtime(public_path('js/autoselect.js')) }}"></script>
+
+    {{-- 실시간 알림(웹 Pusher) — 로그인 사용자 개인 채널 구독 → 토스트 + 벨 표시 --}}
+    @php $pusherKey = config('broadcasting.connections.pusher.key'); @endphp
+    @if($me && $pusherKey)
+        @once
+            <script src="https://js.pusher.com/8.2.0/pusher.min.js"></script>
+        @endonce
+        <script>
+            (function () {
+                if (!window.Pusher) return;
+                var key = @json($pusherKey), cluster = @json(config('broadcasting.connections.pusher.options.cluster')), meId = {{ (int) $me->id }};
+                if (window.__notiPusher) return; // 중복 구독 방지(프레임/재방문)
+                window.__notiPusher = new Pusher(key, {
+                    cluster: cluster, forceTLS: true,
+                    authEndpoint: '{{ url('/broadcasting/auth') }}',
+                    auth: { headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content } },
+                });
+                window.__notiPusher.subscribe('private-user.' + meId).bind('notification.created', function (d) {
+                    var dot = document.getElementById('noti-dot');
+                    if (dot) { dot.classList.remove('hidden'); dot.style.animation = 'ping 1s ease-out 3'; }
+                    if (window.toast) window.toast((d.message || d.title || '새 알림'), d.tone || 'info', d.noti_label || '알림');
+                });
+            })();
+        </script>
+    @endif
     @livewireScriptConfig
 </body>
 </html>

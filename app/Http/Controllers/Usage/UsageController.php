@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Usage;
 
 use App\Enums\OrgType;
+use App\Enums\SalesChannel;
 use App\Enums\UsageStatus;
 use App\Http\Controllers\Controller;
 use App\Models\Organization;
@@ -16,6 +17,7 @@ use App\Services\UsageApprovalService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 /**
@@ -61,6 +63,7 @@ class UsageController extends Controller
             'hospital_id' => [$isLife ? 'required' : 'nullable', 'integer', 'exists:organizations,id'],
             // 소급·사후 등록 허용 — 과거 사용일도 가능(마감월만 차단).
             'usage_date' => ['required', 'date', new NotClosedMonth],
+            'sales_channel' => ['nullable', Rule::enum(SalesChannel::class)],
             'items' => ['required', 'array', 'min:1'],
             'items.*.product_id' => ['required', 'integer', 'exists:products,id'],
             'items.*.lot_id' => ['required', 'integer', 'exists:product_lots,id'],
@@ -79,6 +82,7 @@ class UsageController extends Controller
                 'hospital_id' => $hospital->id,
                 'status' => UsageStatus::DRAFT,
                 'usage_date' => $validated['usage_date'],
+                'sales_channel' => $validated['sales_channel'] ?? SalesChannel::DIRECT->value,
                 'total_amount' => 0,
                 'created_by' => $user->id,
             ]);

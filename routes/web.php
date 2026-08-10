@@ -15,6 +15,7 @@ use App\Http\Controllers\Inventory\ExpiryController;
 use App\Http\Controllers\Inventory\LotTraceController;
 use App\Http\Controllers\Inventory\StockStatusController;
 use App\Http\Controllers\Inventory\StocktakeController;
+use App\Http\Controllers\LabelController;
 use App\Http\Controllers\LegalController;
 use App\Http\Controllers\Master\OrganizationMasterController;
 use App\Http\Controllers\Master\ProductMasterController;
@@ -22,6 +23,7 @@ use App\Http\Controllers\Master\SafetyStockMasterController;
 use App\Http\Controllers\Master\UserMasterController;
 use App\Http\Controllers\Outbound\OutboundController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\ReportController;
 use App\Http\Controllers\ReturnController;
 use App\Http\Controllers\Settlement\ClosingController;
 use App\Http\Controllers\Settlement\SettlementController;
@@ -120,6 +122,10 @@ Route::middleware('auth')->group(function () {
         });
     });
 
+    // QR/바코드 라벨 출력 — 출고(LOT 배정분)·대량입고 명세
+    Route::get('/outbounds/{outbound}/labels', [LabelController::class, 'outbound'])->middleware('role:HQ,WAREHOUSE')->name('outbounds.labels');
+    Route::get('/inbounds/{inbound}/labels', [LabelController::class, 'inbound'])->middleware('role:HQ,WAREHOUSE,SUPPLIER')->name('inbounds.labels');
+
     // 반납(병원 → 창고) — 등록(병원/라이프) → 배송 → 수령확인(창고/본사)
     Route::prefix('returns')->name('returns.')->controller(ReturnController::class)->group(function () {
         Route::get('/', 'index')->middleware('role:HQ,WAREHOUSE,HOSPITAL,LIFE')->name('index');
@@ -182,6 +188,14 @@ Route::middleware('auth')->group(function () {
     });
 
     // 감사 로그 / 시스템 관리 — 본사 전용
+    // 리포트 — 본사 전용(채널별 매출·상품분석)
+    Route::middleware('role:HQ')->prefix('reports')->name('reports.')->controller(ReportController::class)->group(function () {
+        Route::get('/channel-sales', 'channelSales')->name('channel-sales');
+        Route::get('/channel-sales/data', 'channelSalesData')->name('channel-sales.data');
+        Route::get('/product-analysis', 'productAnalysis')->name('product-analysis');
+        Route::get('/product-analysis/data', 'productAnalysisData')->name('product-analysis.data');
+    });
+
     Route::middleware('role:HQ')->prefix('admin')->name('admin.')->group(function () {
         // 공지사항 발송(FCM 푸시)
         Route::get('/announcements', [AnnouncementController::class, 'create'])->name('announcements');
