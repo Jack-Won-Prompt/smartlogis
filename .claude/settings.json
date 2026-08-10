@@ -222,7 +222,9 @@
       "Bash(grep -nB2 -A4 \"booted\\\\|ScopedBy\\\\|addGlobalScope\" app/Models/UsageReport.php)",
       "Bash(grep -nA8 \"function __construct\\\\|class DomainException\\\\|extends\" app/Exceptions/DomainException.php)",
       "Bash(vendor/bin/pint app/Enums/ReturnStatus.php app/Enums/TxType.php app/Enums/RefType.php app/Models/StockReturn.php app/Models/StockReturnItem.php app/Services/ReturnService.php app/Http/Controllers/ReturnController.php tests/Feature/ReturnServiceTest.php database/migrations/2026_08_10_000100_create_stock_returns_tables.php --quiet)",
-      "Bash(node cap_returns.js)"
+      "Bash(node cap_returns.js)",
+      "Bash(grep -nA18 \"public function create\\\\|public function store\\\\|public function submit\" app/Http/Controllers/Usage/UsageController.php)",
+      "Bash(vendor/bin/pint app/Http/Controllers/Usage/UsageController.php app/Http/Controllers/Inventory/StockStatusController.php tests/Feature/UsageLifeRegisterTest.php --quiet)"
     ],
     "additionalDirectories": [
       "\\tmp",

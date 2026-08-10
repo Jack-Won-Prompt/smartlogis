@@ -81,6 +81,7 @@ class StockStatusController extends Controller
                     'expiry_date' => $b->lot->expiry_date?->toDateString(),
                     'expiry_days' => $days,
                     'qty' => $b->qty,
+                    'unit' => (float) $b->product->sales_price,   // 사용분 등록 화면 금액 표시용
                     'reserved_qty' => $reserved,   // 품목 단위 예약(승인·피킹 중)
                     'available_qty' => $available, // 품목 단위 가용재고(총−예약)
                     'safety_qty' => $safety,

@@ -38,7 +38,7 @@ return [
             ['반납 처리', 'returns.index', [OrgType::HQ, OrgType::WAREHOUSE, OrgType::HOSPITAL, OrgType::LIFE]],
         ]],
         ['사용분', 'clipboard', [
-            ['사용분 등록', 'usages.create', [OrgType::HOSPITAL]],
+            ['사용분 등록', 'usages.create', [OrgType::HOSPITAL, OrgType::LIFE]],
             ['사용분 승인', 'usages.approval', [OrgType::HQ]],
             ['사용분 이력', 'usages.index', [OrgType::HQ, OrgType::HOSPITAL, OrgType::LIFE]],
         ]],

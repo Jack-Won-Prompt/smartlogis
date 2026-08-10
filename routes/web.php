@@ -145,13 +145,13 @@ Route::middleware('auth')->group(function () {
     // 사용분 — 등록(병원)/승인(본사)/이력
     Route::prefix('usages')->name('usages.')->group(function () {
         Route::controller(UsageController::class)->group(function () {
-            Route::get('/create', 'create')->middleware('role:HOSPITAL')->name('create');
+            Route::get('/create', 'create')->middleware('role:HOSPITAL,LIFE')->name('create');
             Route::get('/approval', 'approval')->middleware('role:HQ')->name('approval');
             Route::get('/', 'index')->middleware('role:HQ,HOSPITAL,LIFE')->name('index');
             Route::get('/data', 'data')->middleware('role:HQ,HOSPITAL,LIFE')->name('data');
             Route::get('/{usage}', 'show')->middleware('role:HQ,HOSPITAL,LIFE')->name('show');
-            Route::post('/', 'store')->middleware('role:HOSPITAL')->name('store');
-            Route::post('/{usage}/submit', 'submit')->middleware('role:HOSPITAL')->name('submit');
+            Route::post('/', 'store')->middleware('role:HOSPITAL,LIFE')->name('store');
+            Route::post('/{usage}/submit', 'submit')->middleware('role:HOSPITAL,LIFE')->name('submit');
             Route::post('/{usage}/approve', 'approve')->middleware('role:HQ')->name('approve');
             Route::post('/{usage}/reject', 'reject')->middleware('role:HQ')->name('reject');
         });
