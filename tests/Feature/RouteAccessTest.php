@@ -25,6 +25,9 @@ dataset('금지된 역할·경로', [
     '병원은 사용분 승인(HQ 전용) 진입 불가' => [OrgType::HOSPITAL, '/usages/approval'],
     '창고는 공급사 화면 진입 불가' => [OrgType::WAREHOUSE, '/supplier/stocks'],
     '공급사는 감사 로그(HQ 전용) 진입 불가' => [OrgType::SUPPLIER, '/admin/audit-logs'],
+    '라이프사이언스는 사용분 승인(HQ 전용) 진입 불가' => [OrgType::LIFE, '/usages/approval'],
+    '라이프사이언스는 출고 지시(HQ·창고) 진입 불가' => [OrgType::LIFE, '/outbounds'],
+    '라이프사이언스는 마스터(HQ 전용) 진입 불가' => [OrgType::LIFE, '/master/products'],
 ]);
 
 it('허용되지 않은 역할은 403 을 받는다', function (OrgType $role, string $path) {
@@ -37,6 +40,8 @@ dataset('허용된 역할·경로', [
     'HQ 사용분 승인' => [OrgType::HQ, '/usages/approval'],
     'HQ 감사 로그' => [OrgType::HQ, '/admin/audit-logs'],
     '공급사 자사 재고' => [OrgType::SUPPLIER, '/supplier/stocks'],
+    '라이프사이언스 재고 현황' => [OrgType::LIFE, '/inventory/status'],
+    '라이프사이언스 사용분 이력' => [OrgType::LIFE, '/usages'],
 ]);
 
 it('허용된 역할은 화면에 정상 진입한다', function (OrgType $role, string $path) {

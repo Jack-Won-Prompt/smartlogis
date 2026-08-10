@@ -101,7 +101,6 @@ class SettlementController extends ApiController
         ], $summary);
     }
 
-
     /** 정산 상세 — 품목별 집계. */
     public function show(Request $request, int $id): JsonResponse
     {

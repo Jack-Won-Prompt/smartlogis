@@ -6,6 +6,7 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -79,7 +80,7 @@ abstract class ApiController extends Controller
      * 목록을 스크롤하지 않고도 "검수 대기가 몇 건인지" 를 알 수 있어야 한다.
      * 페이징 전 쿼리로 세므로 **전체 조건 기준**이다.
      *
-     * @param  \Illuminate\Database\Eloquent\Builder<covariant \Illuminate\Database\Eloquent\Model>  $query
+     * @param  Builder<covariant \Illuminate\Database\Eloquent\Model>  $query
      * @param  array<string, array{0: string, 1: string}>  $map  status => [라벨, 톤]
      * @param  array<int, array<string, mixed>>  $leadStats  세그먼트 앞에 붙일 지표
      */

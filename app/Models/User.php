@@ -93,6 +93,12 @@ class User extends Authenticatable
         return $this->role === OrgType::SUPPLIER;
     }
 
+    /** 라이프사이언스(요청) — 병원 대신 물품 요청·사용확정·반납을 수행한다. */
+    public function isLife(): bool
+    {
+        return $this->role === OrgType::LIFE;
+    }
+
     /**
      * 주어진 역할 중 하나인지 확인한다(미들웨어/Policy 공용).
      */

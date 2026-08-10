@@ -87,6 +87,7 @@ class RegisteredUserController extends Controller
             OrgType::SUPPLIER => 'SUP',
             OrgType::WAREHOUSE => 'WH',
             OrgType::HQ => 'HQ',
+            OrgType::LIFE => 'LIFE',
         };
 
         do {

@@ -18,6 +18,7 @@ enum OrgType: string implements HasLabel
     case WAREHOUSE = 'WAREHOUSE';
     case HOSPITAL = 'HOSPITAL';
     case SUPPLIER = 'SUPPLIER';
+    case LIFE = 'LIFE';   // 라이프사이언스(요청) — 병원 대신 물품 요청·사용확정·반납
 
     public function label(): string
     {
@@ -26,6 +27,7 @@ enum OrgType: string implements HasLabel
             self::WAREHOUSE => '물류창고',
             self::HOSPITAL => '거점병원',
             self::SUPPLIER => '공급사',
+            self::LIFE => '라이프사이언스',
         };
     }
 

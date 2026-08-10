@@ -24,10 +24,10 @@ return [
             ['안전재고', 'master.safety-stocks', [OrgType::HQ]],
         ]],
         ['재고', 'box', [
-            ['재고 현황', 'inventory.status', [OrgType::HQ, OrgType::WAREHOUSE, OrgType::HOSPITAL]],
-            ['유통기한 임박', 'inventory.expiry', [OrgType::HQ, OrgType::WAREHOUSE, OrgType::HOSPITAL]],
+            ['재고 현황', 'inventory.status', [OrgType::HQ, OrgType::WAREHOUSE, OrgType::HOSPITAL, OrgType::LIFE]],
+            ['유통기한 임박', 'inventory.expiry', [OrgType::HQ, OrgType::WAREHOUSE, OrgType::HOSPITAL, OrgType::LIFE]],
             ['재고 실사', 'stocktakes.index', [OrgType::HQ, OrgType::WAREHOUSE, OrgType::HOSPITAL]],
-            ['Lot 추적', 'inventory.lot-trace', [OrgType::HQ, OrgType::WAREHOUSE, OrgType::HOSPITAL]],
+            ['Lot 추적', 'inventory.lot-trace', [OrgType::HQ, OrgType::WAREHOUSE, OrgType::HOSPITAL, OrgType::LIFE]],
         ]],
         ['입출고', 'truck', [
             ['입고 예정(ASN)', 'inbounds.asn', [OrgType::HQ, OrgType::WAREHOUSE, OrgType::SUPPLIER]],
@@ -39,7 +39,7 @@ return [
         ['사용분', 'clipboard', [
             ['사용분 등록', 'usages.create', [OrgType::HOSPITAL]],
             ['사용분 승인', 'usages.approval', [OrgType::HQ]],
-            ['사용분 이력', 'usages.index', [OrgType::HQ, OrgType::HOSPITAL]],
+            ['사용분 이력', 'usages.index', [OrgType::HQ, OrgType::HOSPITAL, OrgType::LIFE]],
         ]],
         ['정산', 'won', [
             ['월 정산', 'settlements.index', [OrgType::HQ, OrgType::HOSPITAL, OrgType::SUPPLIER]],

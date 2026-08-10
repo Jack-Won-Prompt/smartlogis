@@ -32,7 +32,8 @@ class OrgLocationScope implements Scope
             return;
         }
 
-        if ($user->isHq() || $user->isSupplier()) {
+        // HQ·공급사·라이프사이언스(요청)는 위치에 매이지 않고 전 재고를 조회한다.
+        if ($user->isHq() || $user->isSupplier() || $user->isLife()) {
             return;
         }
 

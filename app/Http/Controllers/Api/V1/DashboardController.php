@@ -94,6 +94,12 @@ class DashboardController extends ApiController
                 $this->kpi('부족 발생', $belowSafety, '건', 'crit', '/supplier/shortages'),
                 $this->kpi('진행 중 납품', $this->inboundOpenBySupplierCount($orgId), '건', 'info', '/inbounds'),
             ],
+            OrgType::LIFE => [
+                $this->kpi('승인 대기 요청', $this->usagePendingCount(), '건', 'warn', '/usages?status=SUBMITTED'),
+                $this->kpi('가용 재고 조회', $stockQty, 'EA', 'ok', '/inventory/stocks'),
+                $this->kpi('안전재고 미달', $belowSafety, '건', 'crit', '/inventory/shortages'),
+                $this->kpi('D-30 유통기한', $expirySoon, 'Lot', 'warn', '/inventory/expiry'),
+            ],
         };
     }
 
@@ -177,6 +183,12 @@ class DashboardController extends ApiController
                 ['key' => 'stock', 'label' => '재고 조회', 'icon' => 'stock', 'route' => '/inventory/stocks'],
                 ['key' => 'inbound', 'label' => '입고 확인', 'icon' => 'inbound', 'route' => '/inbounds'],
                 ['key' => 'expiry', 'label' => '유통기한', 'icon' => 'expiry', 'route' => '/inventory/expiry'],
+            ],
+            OrgType::LIFE => [
+                ['key' => 'request', 'label' => '물품 요청', 'icon' => 'asn', 'route' => '/usages/create'],
+                ['key' => 'use', 'label' => '사용 확정', 'icon' => 'scan_use', 'route' => '/usages'],
+                ['key' => 'stock', 'label' => '재고 조회', 'icon' => 'stock', 'route' => '/inventory/stocks'],
+                ['key' => 'return', 'label' => '반납', 'icon' => 'inbound', 'route' => '/returns'],
             ],
             OrgType::SUPPLIER => [
                 ['key' => 'asn', 'label' => '납품 등록', 'icon' => 'asn', 'route' => '/inbounds/create'],

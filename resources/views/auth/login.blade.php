@@ -83,6 +83,7 @@
             $testAccounts = [
                 ['본사',   'hq@smartlogis.test',          '전체 · 승인/정산/마스터'],
                 ['물류창고', 'wh1@smartlogis.test',         '입출고 · 배송 · 창고재고'],
+                ['라이프',  'life1@smartlogis.test',       '라이프사이언스 · 요청/사용확정'],
                 ['병원',   'seoul@smartlogis.test',       '서울대병원 · 재고/사용분'],
                 ['공급사',  'sup-samsung@smartlogis.test', '삼성메디슨 · 자사재고/부족'],
             ];

@@ -80,7 +80,7 @@ Route::middleware('auth')->group(function () {
     });
 
     // 재고 — 본사/창고/병원
-    Route::middleware('role:HQ,WAREHOUSE,HOSPITAL')->prefix('inventory')->name('inventory.')->group(function () {
+    Route::middleware('role:HQ,WAREHOUSE,HOSPITAL,LIFE')->prefix('inventory')->name('inventory.')->group(function () {
         Route::get('/status', [StockStatusController::class, 'index'])->name('status');
         Route::get('/status/data', [StockStatusController::class, 'data'])->name('status.data');
 
@@ -136,9 +136,9 @@ Route::middleware('auth')->group(function () {
         Route::controller(UsageController::class)->group(function () {
             Route::get('/create', 'create')->middleware('role:HOSPITAL')->name('create');
             Route::get('/approval', 'approval')->middleware('role:HQ')->name('approval');
-            Route::get('/', 'index')->middleware('role:HQ,HOSPITAL')->name('index');
-            Route::get('/data', 'data')->middleware('role:HQ,HOSPITAL')->name('data');
-            Route::get('/{usage}', 'show')->middleware('role:HQ,HOSPITAL')->name('show');
+            Route::get('/', 'index')->middleware('role:HQ,HOSPITAL,LIFE')->name('index');
+            Route::get('/data', 'data')->middleware('role:HQ,HOSPITAL,LIFE')->name('data');
+            Route::get('/{usage}', 'show')->middleware('role:HQ,HOSPITAL,LIFE')->name('show');
             Route::post('/', 'store')->middleware('role:HOSPITAL')->name('store');
             Route::post('/{usage}/submit', 'submit')->middleware('role:HOSPITAL')->name('submit');
             Route::post('/{usage}/approve', 'approve')->middleware('role:HQ')->name('approve');
