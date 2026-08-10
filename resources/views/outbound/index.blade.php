@@ -95,7 +95,7 @@
             function f(id){ return document.getElementById(id).value; }
             obGrid = window.WWGrid.connect('#ob-grid', {
                 dataUrl: '{{ route('outbounds.data') }}', readonly:true, screenName:'출고지시',
-                onRowClick:(row)=>{ const map={ APPROVED:'pick', PICKING:'ship', SHIPPED:'deliver' }; const a=map[row.status]; if(a) advance(row.id, a); else window.toast('진행할 다음 단계가 없습니다.','info'); },
+                onRowClick:(row)=>{ const map={ APPROVED:'pick', PICKING:'ship', SHIPPED:'deliver' }; const a=map[row.status]; if(a) advance(row.id, a); else if(row.status==='DELIVERED') window.open(`/outbounds/${row.id}/labels`,'_blank'); else window.toast('진행할 다음 단계가 없습니다.','info'); },
                 params: () => ({ keyword:f('f-keyword'), status:f('f-status') }),
                 columns: [
                     { title:'출고번호', field:'outbound_no', width:170 },

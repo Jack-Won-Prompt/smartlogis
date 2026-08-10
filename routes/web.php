@@ -15,6 +15,7 @@ use App\Http\Controllers\Inventory\ExpiryController;
 use App\Http\Controllers\Inventory\LotTraceController;
 use App\Http\Controllers\Inventory\StockStatusController;
 use App\Http\Controllers\Inventory\StocktakeController;
+use App\Http\Controllers\LabelController;
 use App\Http\Controllers\LegalController;
 use App\Http\Controllers\Master\OrganizationMasterController;
 use App\Http\Controllers\Master\ProductMasterController;
@@ -120,6 +121,10 @@ Route::middleware('auth')->group(function () {
             Route::post('/{outbound}/deliver', 'deliver')->name('deliver');
         });
     });
+
+    // QR/바코드 라벨 출력 — 출고(LOT 배정분)·대량입고 명세
+    Route::get('/outbounds/{outbound}/labels', [LabelController::class, 'outbound'])->middleware('role:HQ,WAREHOUSE')->name('outbounds.labels');
+    Route::get('/inbounds/{inbound}/labels', [LabelController::class, 'inbound'])->middleware('role:HQ,WAREHOUSE,SUPPLIER')->name('inbounds.labels');
 
     // 반납(병원 → 창고) — 등록(병원/라이프) → 배송 → 수령확인(창고/본사)
     Route::prefix('returns')->name('returns.')->controller(ReturnController::class)->group(function () {

@@ -230,7 +230,12 @@
       "Bash(grep -n \"use App\\\\\\\\\\\\\\\\Http\\\\\\\\\\\\\\\\Controllers\\\\\\\\\\\\\\\\ReportController;\" routes/web.php)",
       "Bash(vendor/bin/pint app/Enums/SalesChannel.php app/Models/UsageReport.php app/Http/Controllers/ReportController.php app/Http/Controllers/Usage/UsageController.php routes/web.php config/menu.php --quiet)",
       "Bash(vendor/bin/pint app/Http/Controllers/Usage/UsageController.php tests/Feature/ChannelSalesReportTest.php --quiet)",
-      "Bash(vendor/bin/pint app/Http/Controllers/ReportController.php tests/Feature/ProductAnalysisReportTest.php --quiet)"
+      "Bash(vendor/bin/pint app/Http/Controllers/ReportController.php tests/Feature/ProductAnalysisReportTest.php --quiet)",
+      "Bash(php -r 'require '\\\\''vendor/autoload.php'\\\\''; $r=\\\\Endroid\\\\QrCode\\\\Builder\\\\Builder::create\\(\\)->data\\('\\\\''01A0817260810102ABC'\\\\''\\)->size\\(160\\)->build\\(\\); echo '\\\\''OK dataUri len='\\\\''.strlen\\($r->getDataUri\\(\\)\\).PHP_EOL;')",
+      "Bash(php -r 'require '\\\\''vendor/autoload.php'\\\\''; $r=\\\\Endroid\\\\QrCode\\\\Builder\\\\Builder::create\\(\\)->data\\('\\\\''01A0817260810102ABC'\\\\''\\)->size\\(160\\)->build\\(\\); echo strlen\\($r->getDataUri\\(\\)\\);')",
+      "Bash(php -r \"echo \\\\Composer\\\\InstalledVersions::getVersion\\('endroid/qr-code'\\);\")",
+      "Bash(php -r ' *)",
+      "Bash(vendor/bin/pint app/Services/LabelService.php app/Http/Controllers/LabelController.php tests/Feature/LabelTest.php --quiet)"
     ],
     "additionalDirectories": [
       "\\tmp",
