@@ -235,7 +235,11 @@
       "Bash(php -r 'require '\\\\''vendor/autoload.php'\\\\''; $r=\\\\Endroid\\\\QrCode\\\\Builder\\\\Builder::create\\(\\)->data\\('\\\\''01A0817260810102ABC'\\\\''\\)->size\\(160\\)->build\\(\\); echo strlen\\($r->getDataUri\\(\\)\\);')",
       "Bash(php -r \"echo \\\\Composer\\\\InstalledVersions::getVersion\\('endroid/qr-code'\\);\")",
       "Bash(php -r ' *)",
-      "Bash(vendor/bin/pint app/Services/LabelService.php app/Http/Controllers/LabelController.php tests/Feature/LabelTest.php --quiet)"
+      "Bash(vendor/bin/pint app/Services/LabelService.php app/Http/Controllers/LabelController.php tests/Feature/LabelTest.php --quiet)",
+      "Bash(sed -i 's/현재고 기반으로 자동 산출합니다/최근 사용량\\(월평균\\) 기반으로 안전재고를 자동 산출합니다/' resources/views/master/safety-stocks.blade.php)",
+      "Bash(sed -i 's/선택 병원의 안전재고를 현재고 기준으로 추천 적용할까요?/선택 병원의 안전재고를 최근 사용량 기준으로 추천 적용할까요?/' resources/views/master/safety-stocks.blade.php)",
+      "Bash(grep -nA6 \"fillable\" app/Models/SafetyStock.php)",
+      "Bash(vendor/bin/pint app/Http/Controllers/Master/SafetyStockMasterController.php config/logistics.php tests/Feature/SafetyStockAutoSuggestTest.php --quiet)"
     ],
     "additionalDirectories": [
       "\\tmp",

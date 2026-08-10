@@ -161,7 +161,10 @@ class SafetyStockMasterController extends Controller
         return response()->json(['deleted' => $deleted]);
     }
 
-    /** 현재고 기반 자동 산출 추천. */
+    /**
+     * 안전재고 자동 산출 추천 — 최근 N개월 승인 사용량의 월평균 × 안전계수.
+     * 병원(=선납창고) 단위로 계산하므로 창고별 차등이 자동 반영된다.
+     */
     public function autoSuggest(Request $request): JsonResponse
     {
         $hospitalId = $request->integer('hospital_id');
@@ -169,23 +172,35 @@ class SafetyStockMasterController extends Controller
             return response()->json(['message' => '병원을 선택하세요.'], 422);
         }
 
-        $rows = DB::table('safety_stocks as s')
-            ->leftJoin('stock_balances as b', function ($j) {
-                $j->on('b.org_id', '=', 's.hospital_id')->on('b.product_id', '=', 's.product_id');
-            })
-            ->where('s.hospital_id', $hospitalId)
-            ->groupBy('s.hospital_id', 's.product_id')
-            ->select('s.product_id', DB::raw('COALESCE(SUM(b.qty),0) as onhand'))->get();
+        $months = max(1, min(12, $request->integer('months') ?: (int) config('logistics.safety_months', 3)));
+        $factor = $request->float('factor') ?: (float) config('logistics.safety_factor', 1.0);
+        $since = now()->subMonths($months)->startOfDay()->toDateString();
+
+        // 최근 N개월 승인 사용량(품목별 합계).
+        $usage = DB::table('usage_report_items as ui')
+            ->join('usage_reports as ur', 'ur.id', '=', 'ui.usage_report_id')
+            ->where('ur.hospital_id', $hospitalId)
+            ->where('ur.status', 'APPROVED')
+            ->whereDate('ur.usage_date', '>=', $since)
+            ->groupBy('ui.product_id')
+            ->selectRaw('ui.product_id, SUM(ui.qty) as used')
+            ->pluck('used', 'product_id');
+
+        $rows = DB::table('safety_stocks')->where('hospital_id', $hospitalId)->get(['product_id']);
 
         $count = 0;
         foreach ($rows as $r) {
-            $safety = max(10, (int) round($r->onhand * 0.6));
+            $used = (int) ($usage[$r->product_id] ?? 0);
+            $safety = (int) ceil(($used / $months) * $factor);   // 월평균 사용량 × 계수
             DB::table('safety_stocks')->where('hospital_id', $hospitalId)->where('product_id', $r->product_id)
                 ->update(['safety_qty' => $safety, 'max_qty' => $safety * 3, 'reorder_qty' => $safety * 2, 'updated_at' => now()]);
             $count++;
         }
 
-        return response()->json(['count' => $count, 'message' => "{$count}개 품목을 현재고 기준으로 추천 적용했습니다."]);
+        return response()->json([
+            'count' => $count,
+            'message' => "{$count}개 품목을 최근 {$months}개월 사용량(월평균)×{$factor} 기준으로 추천 적용했습니다.",
+        ]);
     }
 
     public function export(Request $request): BinaryFileResponse

@@ -5,7 +5,7 @@
 @endphp
 
 <x-app-layout title="안전재고" breadcrumb="기준정보 / 안전재고">
-    <x-page-header title="안전재고 설정" subtitle="병원 × 품목 안전재고를 셀에서 바로 수정·추가하고, 현재고 기반으로 자동 산출합니다." />
+    <x-page-header title="안전재고 설정" subtitle="병원 × 품목 안전재고를 셀에서 바로 수정·추가하고, 최근 사용량(월평균) 기반으로 안전재고를 자동 산출합니다." />
 
     <x-filter-bar class="mt-6">
         <div>
@@ -80,7 +80,7 @@
             document.getElementById('btn-suggest').addEventListener('click', async () => {
                 const hid = f('f-hospital');
                 if(!hid){ window.toast('병원을 먼저 선택하세요.','warn'); return; }
-                const ok = await window.confirmDialog({ title:'자동 산출', message:'선택 병원의 안전재고를 현재고 기준으로 추천 적용할까요?', tone:'brand', confirmText:'적용' });
+                const ok = await window.confirmDialog({ title:'자동 산출', message:'선택 병원의 안전재고를 최근 사용량 기준으로 추천 적용할까요?', tone:'brand', confirmText:'적용' });
                 if(!ok) return;
                 const res = await fetch('{{ route('master.safety-stocks.autoSuggest') }}', { method:'POST', headers:{'Content-Type':'application/json','X-CSRF-TOKEN':document.querySelector('meta[name=csrf-token]').content, Accept:'application/json'}, body: JSON.stringify({ hospital_id: hid }) });
                 const data = await res.json();
