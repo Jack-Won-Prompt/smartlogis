@@ -13,3 +13,10 @@ Broadcast::channel('conversation.{conversationId}', function ($user, int $conver
         ->whereHas('participants', fn ($q) => $q->where('user_id', $user->id))
         ->exists();
 });
+
+/**
+ * 사용자 개인 채널(user.{id}) — 본인만. 실시간 알림(웹 Pusher) 수신용.
+ */
+Broadcast::channel('user.{userId}', function ($user, int $userId) {
+    return (int) $user->id === $userId;
+});
