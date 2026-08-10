@@ -91,10 +91,12 @@
 
 ## D. 진행 현황
 - [x] **B-0 가용재고** — `StockService::reservedQty/availableQty` + 재고현황 컬럼 + Pest (커밋 `db9265b`)
-- [ ] B-1 조직모델·용어 (LIFE 역할 additive)
-- [ ] B-2 반납
+- [x] **B-1 조직모델·용어** — `OrgType::LIFE`(라이프사이언스=요청) additive 추가, 스코프·대시보드·메뉴·라우트·시더·테스트 (커밋 `9b58fac`, 109 passed)
+- [ ] B-2 반납 — 다음. 결정: 창고 반입 tx를 신규 `TxType::RETURN_TO_WH(+)` 로 추가(권장) vs 기존 TRANSFER 재사용.
 - [ ] B-3 소급·사후 등록
 - [ ] B-4 30일 마감·리마인더
 - [ ] B-5 채널매출·상품분석·QR
 - [ ] B-6 안전재고 자동추천
 - [ ] B-7 알림톡·PWA (결정 후)
+
+> 참고: `phpstan analyse app` 은 모바일 API(Api/V1)의 **기존 부채 19건**(missingType/nullsafe)이 있으며 이는 정렬 작업과 무관(master 동일). 필요 시 별도 클린업.
