@@ -225,7 +225,11 @@
       "Bash(node cap_returns.js)",
       "Bash(grep -nA18 \"public function create\\\\|public function store\\\\|public function submit\" app/Http/Controllers/Usage/UsageController.php)",
       "Bash(vendor/bin/pint app/Http/Controllers/Usage/UsageController.php app/Http/Controllers/Inventory/StockStatusController.php tests/Feature/UsageLifeRegisterTest.php --quiet)",
-      "Bash(vendor/bin/pint app/Enums/NotiType.php app/Console/Commands/UsageCloseReminderCommand.php app/Models/Outbound.php config/logistics.php routes/console.php tests/Feature/UsageCloseReminderTest.php database/migrations/2026_08_10_000200_add_close_reminded_at_to_outbounds.php --quiet)"
+      "Bash(vendor/bin/pint app/Enums/NotiType.php app/Console/Commands/UsageCloseReminderCommand.php app/Models/Outbound.php config/logistics.php routes/console.php tests/Feature/UsageCloseReminderTest.php database/migrations/2026_08_10_000200_add_close_reminded_at_to_outbounds.php --quiet)",
+      "Bash(sed -i \"s#use App\\\\\\\\\\\\\\\\Http\\\\\\\\\\\\\\\\Controllers\\\\\\\\\\\\\\\\ProfileController;#use App\\\\\\\\\\\\\\\\Http\\\\\\\\\\\\\\\\Controllers\\\\\\\\\\\\\\\\ProfileController;\\\\nuse App\\\\\\\\\\\\\\\\Http\\\\\\\\\\\\\\\\Controllers\\\\\\\\\\\\\\\\ReportController;#\" routes/web.php)",
+      "Bash(grep -n \"use App\\\\\\\\\\\\\\\\Http\\\\\\\\\\\\\\\\Controllers\\\\\\\\\\\\\\\\ReportController;\" routes/web.php)",
+      "Bash(vendor/bin/pint app/Enums/SalesChannel.php app/Models/UsageReport.php app/Http/Controllers/ReportController.php app/Http/Controllers/Usage/UsageController.php routes/web.php config/menu.php --quiet)",
+      "Bash(vendor/bin/pint app/Http/Controllers/Usage/UsageController.php tests/Feature/ChannelSalesReportTest.php --quiet)"
     ],
     "additionalDirectories": [
       "\\tmp",

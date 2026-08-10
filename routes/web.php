@@ -22,6 +22,7 @@ use App\Http\Controllers\Master\SafetyStockMasterController;
 use App\Http\Controllers\Master\UserMasterController;
 use App\Http\Controllers\Outbound\OutboundController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\ReportController;
 use App\Http\Controllers\ReturnController;
 use App\Http\Controllers\Settlement\ClosingController;
 use App\Http\Controllers\Settlement\SettlementController;
@@ -182,6 +183,12 @@ Route::middleware('auth')->group(function () {
     });
 
     // 감사 로그 / 시스템 관리 — 본사 전용
+    // 리포트 — 본사 전용(채널별 매출·상품분석)
+    Route::middleware('role:HQ')->prefix('reports')->name('reports.')->controller(ReportController::class)->group(function () {
+        Route::get('/channel-sales', 'channelSales')->name('channel-sales');
+        Route::get('/channel-sales/data', 'channelSalesData')->name('channel-sales.data');
+    });
+
     Route::middleware('role:HQ')->prefix('admin')->name('admin.')->group(function () {
         // 공지사항 발송(FCM 푸시)
         Route::get('/announcements', [AnnouncementController::class, 'create'])->name('announcements');
