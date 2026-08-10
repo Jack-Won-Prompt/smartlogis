@@ -35,6 +35,7 @@ return [
             ['출고 지시', 'outbounds.index', [OrgType::HQ, OrgType::WAREHOUSE]],
             ['피킹/출고', 'outbounds.picking', [OrgType::HQ, OrgType::WAREHOUSE]],
             ['배송 현황', 'outbounds.delivery', [OrgType::HQ, OrgType::WAREHOUSE, OrgType::HOSPITAL]],
+            ['반납 처리', 'returns.index', [OrgType::HQ, OrgType::WAREHOUSE, OrgType::HOSPITAL, OrgType::LIFE]],
         ]],
         ['사용분', 'clipboard', [
             ['사용분 등록', 'usages.create', [OrgType::HOSPITAL]],

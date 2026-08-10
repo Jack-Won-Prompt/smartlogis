@@ -18,6 +18,7 @@ enum RefType: string implements HasLabel
     case OUTBOUND = 'OUTBOUND';
     case USAGE = 'USAGE';
     case STOCKTAKE = 'STOCKTAKE';
+    case RETURN = 'RETURN';
     case MANUAL = 'MANUAL';
 
     public function label(): string
@@ -27,6 +28,7 @@ enum RefType: string implements HasLabel
             self::OUTBOUND => '출고',
             self::USAGE => '사용분',
             self::STOCKTAKE => '재고 실사',
+            self::RETURN => '반납',
             self::MANUAL => '수기 조정',
         };
     }

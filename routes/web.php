@@ -22,6 +22,7 @@ use App\Http\Controllers\Master\SafetyStockMasterController;
 use App\Http\Controllers\Master\UserMasterController;
 use App\Http\Controllers\Outbound\OutboundController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\ReturnController;
 use App\Http\Controllers\Settlement\ClosingController;
 use App\Http\Controllers\Settlement\SettlementController;
 use App\Http\Controllers\Supplier\SupplierController;
@@ -117,6 +118,16 @@ Route::middleware('auth')->group(function () {
             Route::post('/{outbound}/ship', 'ship')->name('ship');
             Route::post('/{outbound}/deliver', 'deliver')->name('deliver');
         });
+    });
+
+    // 반납(병원 → 창고) — 등록(병원/라이프) → 배송 → 수령확인(창고/본사)
+    Route::prefix('returns')->name('returns.')->controller(ReturnController::class)->group(function () {
+        Route::get('/', 'index')->middleware('role:HQ,WAREHOUSE,HOSPITAL,LIFE')->name('index');
+        Route::get('/data', 'data')->middleware('role:HQ,WAREHOUSE,HOSPITAL,LIFE')->name('data');
+        Route::post('/', 'store')->middleware('role:HOSPITAL,LIFE')->name('store');
+        Route::post('/{return}/ship', 'ship')->middleware('role:HQ,WAREHOUSE,HOSPITAL,LIFE')->name('ship');
+        Route::post('/{return}/receive', 'receive')->middleware('role:HQ,WAREHOUSE')->name('receive');
+        Route::post('/{return}/cancel', 'cancel')->middleware('role:HQ,HOSPITAL,LIFE')->name('cancel');
     });
 
     // 재고 실사 — 본사/창고/병원

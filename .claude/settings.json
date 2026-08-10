@@ -215,7 +215,14 @@
       "Bash(grep -rnA12 \"function actingAsRole\" tests/)",
       "Bash(grep -nA4 \"public function warehouse\\\\|public function hospital\\\\|public function supplier\\\\|public function hq\" database/factories/OrganizationFactory.php)",
       "Bash(vendor/bin/pint app *)",
-      "Bash(grep -nB2 -A12 \"options\\(\\).*value=>label\\\\|OrgType\" tests/Unit/EnumTest.php)"
+      "Bash(grep -nB2 -A12 \"options\\(\\).*value=>label\\\\|OrgType\" tests/Unit/EnumTest.php)",
+      "Bash(node cap_life.js)",
+      "Bash(grep -nB1 -A10 \"match\" app/Http/Controllers/Api/V1/InventoryController.php)",
+      "Bash(grep -nE 'ScopedBy|addGlobalScope|hospitalScopeColumn|use HasFactory|class UsageReport|protected \\\\$fillable|protected \\\\$casts|function items|belongsTo|hasMany' app/Models/UsageReport.php)",
+      "Bash(grep -nB2 -A4 \"booted\\\\|ScopedBy\\\\|addGlobalScope\" app/Models/UsageReport.php)",
+      "Bash(grep -nA8 \"function __construct\\\\|class DomainException\\\\|extends\" app/Exceptions/DomainException.php)",
+      "Bash(vendor/bin/pint app/Enums/ReturnStatus.php app/Enums/TxType.php app/Enums/RefType.php app/Models/StockReturn.php app/Models/StockReturnItem.php app/Services/ReturnService.php app/Http/Controllers/ReturnController.php tests/Feature/ReturnServiceTest.php database/migrations/2026_08_10_000100_create_stock_returns_tables.php --quiet)",
+      "Bash(node cap_returns.js)"
     ],
     "additionalDirectories": [
       "\\tmp",

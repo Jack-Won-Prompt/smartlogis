@@ -20,6 +20,7 @@ enum TxType: string implements HasLabel
     case USE = 'USE';                           // 병원 사용분 승인 (-)
     case ADJUST = 'ADJUST';                     // 실사 차이 조정 (±)
     case RETURN_HOSPITAL = 'RETURN_HOSPITAL';   // 병원 → 창고 반품 (병원 -)
+    case RETURN_TO_WH = 'RETURN_TO_WH';         // 병원 반납분 창고 반입 (창고 +)
     case RETURN_SUPPLIER = 'RETURN_SUPPLIER';   // 창고 → 공급사 반품 (-)
     case TRANSFER = 'TRANSFER';                 // 창고 간 이동 (±)
 
@@ -32,6 +33,7 @@ enum TxType: string implements HasLabel
             self::USE => '사용',
             self::ADJUST => '재고 조정',
             self::RETURN_HOSPITAL => '병원 반품',
+            self::RETURN_TO_WH => '반납 창고 반입',
             self::RETURN_SUPPLIER => '공급사 반품',
             self::TRANSFER => '창고 이동',
         };
@@ -43,7 +45,7 @@ enum TxType: string implements HasLabel
     public function signedDirection(): ?int
     {
         return match ($this) {
-            self::IN_SUPPLIER, self::IN_HOSPITAL => 1,
+            self::IN_SUPPLIER, self::IN_HOSPITAL, self::RETURN_TO_WH => 1,
             self::OUT_TO_HOSPITAL, self::USE, self::RETURN_HOSPITAL, self::RETURN_SUPPLIER => -1,
             self::ADJUST, self::TRANSFER => null,
         };
