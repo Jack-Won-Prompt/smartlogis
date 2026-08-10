@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api\V1;
 
 use App\Enums\OrgType;
+use App\Enums\TxType;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -352,7 +353,7 @@ class InventoryController extends ApiController
             'transactions' => $txs->map(fn ($r) => [
                 'id' => (int) $r->id,
                 'tx_type' => $r->tx_type,
-                'tx_label' => \App\Enums\TxType::from($r->tx_type)->label(),
+                'tx_label' => TxType::from($r->tx_type)->label(),
                 'qty' => (int) $r->qty,
                 'org_name' => $r->org_name,
                 'user_name' => $r->user_name,

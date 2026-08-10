@@ -1,20 +1,38 @@
 @php
+    use App\Enums\OrgType;
+    use App\Models\Organization;
     use App\Models\StockBalance;
-    // 병원 자기 재고(OrgLocationScope 자동 필터) 중 재고 있는 Lot
-    $stock = StockBalance::with(['product','lot'])->where('qty','>',0)->get()
+    $me = auth()->user();
+    $isLife = $me->isLife();
+    // 병원 계정만 자기 재고(OrgLocationScope 자동 필터)를 사전 로드.
+    // 라이프사이언스(요청)는 광역이라 병원 선택 후 동적 로드한다.
+    $stock = $isLife ? collect() : StockBalance::with(['product','lot'])->where('qty','>',0)->get()
         ->map(fn($b)=>[
             'product_id'=>$b->product_id, 'product_name'=>$b->product->product_name, 'product_code'=>$b->product->product_code,
             'lot_id'=>$b->lot_id, 'lot_no'=>$b->lot->lot_no, 'qty'=>$b->qty,
             'unit'=>(float)$b->product->sales_price,
             'expiry'=>$b->lot->expiry_date?->toDateString(),
         ])->values();
+    $hospitals = $isLife
+        ? Organization::query()->where('org_type', OrgType::HOSPITAL)->where('is_active', true)->orderBy('name')->get(['id','name'])
+        : collect();
 @endphp
 
 <x-app-layout title="사용분 등록" breadcrumb="사용분 / 사용분 등록">
-    <x-page-header title="사용분 등록" subtitle="사용한 품목을 스캔하거나 재고에서 선택해 본사로 전송합니다." />
+    <x-page-header title="사용분 등록" subtitle="사용한 품목을 스캔하거나 재고에서 선택해 본사로 전송합니다. 과거 사용일(소급)도 등록할 수 있습니다." />
 
     <div class="mt-6 max-w-3xl" x-data="usageCreate()">
         <div class="rounded-2xl border border-line bg-surface-1 p-6">
+            @if($isLife)
+                <div class="mb-4 border-b border-line pb-4">
+                    <label class="mb-1 block text-xs font-medium text-ink-500">대상 병원 *</label>
+                    <select x-model="hospitalId" @change="loadStock()" class="rounded-lg border-line py-2 text-sm">
+                        <option value="">병원 선택</option>
+                        @foreach($hospitals as $h)<option value="{{ $h->id }}">{{ $h->name }}</option>@endforeach
+                    </select>
+                    <span class="ml-2 text-xs text-ink-400">라이프사이언스는 병원을 대신해 등록합니다. 본사 승인 시 재고 차감·매출이 반영됩니다.</span>
+                </div>
+            @endif
             <div class="flex flex-wrap items-end gap-4">
                 <div>
                     <label class="mb-1 block text-xs font-medium text-ink-500">사용일 *</label>
@@ -78,8 +96,20 @@
             return {
                 usage_date: new Date().toISOString().slice(0,10),
                 stock: @json($stock),
+                isLife: @json($isLife),
+                hospitalId: '',
                 pick:'', dept:'', items:[], saving:false,
                 total(){ return this.items.reduce((s,it)=>s+it.qty*it.unit,0); },
+                async loadStock(){
+                    this.stock=[]; this.pick=''; this.items=[];
+                    if(!this.hospitalId){ return; }
+                    const url = new URL('{{ route('inventory.status.data') }}', location.origin);
+                    url.searchParams.set('size','200'); url.searchParams.set('org_id', this.hospitalId);
+                    const r = await fetch(url, { headers:{Accept:'application/json','X-Requested-With':'XMLHttpRequest'} });
+                    const d = await r.json();
+                    this.stock = (d.data||[]).filter(x=>x.qty>0).map(x=>{ const [org,pid,lid]=x.id.split(':');
+                        return { product_id:+pid, product_name:x.product_name, product_code:x.product_code, lot_id:+lid, lot_no:x.lot_no, qty:x.qty, unit:x.unit||0 }; });
+                },
                 addStock(s, dept){
                     const ex = this.items.find(it=>it.lot_id===s.lot_id);
                     if(ex){ ex.qty++; return; }
@@ -92,8 +122,10 @@
                     this.addStock(s, this.dept);
                 },
                 async submitReport(){
+                    if(this.isLife && !this.hospitalId){ window.toast('대상 병원을 선택하세요.','warn'); return; }
                     this.saving=true;
                     const payload = { usage_date:this.usage_date, items:this.items.map(it=>({product_id:it.product_id, lot_id:it.lot_id, qty:it.qty, dept:it.dept})) };
+                    if(this.isLife){ payload.hospital_id = +this.hospitalId; }
                     const res = await fetch('{{ route('usages.store') }}', { method:'POST', headers:{'Content-Type':'application/json','X-CSRF-TOKEN':document.querySelector('meta[name=csrf-token]').content,Accept:'application/json'}, body: JSON.stringify(payload) });
                     const data = await res.json();
                     if(!res.ok){ this.saving=false; window.toast(data.message||(data.errors&&Object.values(data.errors)[0][0])||'등록 실패','crit'); return; }

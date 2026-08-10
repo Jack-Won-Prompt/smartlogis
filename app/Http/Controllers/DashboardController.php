@@ -96,6 +96,12 @@ class DashboardController extends Controller
                 ['label' => '안전재고 미달 병원', 'value' => number_format($belowSafety), 'tone' => 'warn', 'suffix' => '건'],
                 ['label' => 'D-30 유통기한 임박', 'value' => number_format($expirySoon), 'tone' => 'crit', 'suffix' => 'Lot'],
             ],
+            OrgType::LIFE => [
+                ['label' => '승인 대기 요청', 'value' => number_format($this->usagePending()), 'tone' => 'warn', 'suffix' => '건'],
+                ['label' => '안전재고 미달', 'value' => number_format($belowSafety), 'tone' => 'crit', 'suffix' => '건'],
+                ['label' => 'D-30 유통기한 임박', 'value' => number_format($expirySoon), 'tone' => 'warn', 'suffix' => 'Lot'],
+                ['label' => '활성 제품', 'value' => number_format($activeProducts), 'tone' => null, 'suffix' => '종'],
+            ],
         };
     }
 

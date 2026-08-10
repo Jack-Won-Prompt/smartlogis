@@ -18,6 +18,7 @@ it('options()는 value=>label 배열을 만든다', function () {
         'WAREHOUSE' => '물류창고',
         'HOSPITAL' => '거점병원',
         'SUPPLIER' => '공급사',
+        'LIFE' => '라이프사이언스',
     ]);
 });
 

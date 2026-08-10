@@ -57,4 +57,9 @@ class OrganizationFactory extends Factory
     {
         return $this->type(OrgType::HQ);
     }
+
+    public function life(): static
+    {
+        return $this->type(OrgType::LIFE);
+    }
 }

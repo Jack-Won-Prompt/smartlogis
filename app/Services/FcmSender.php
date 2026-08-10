@@ -37,7 +37,7 @@ class FcmSender
      * @param  array<int, string>  $tokens  기기 푸시 토큰
      * @param  array<string, string>  $data  앱이 탭 처리에 쓰는 부가 데이터
      * @return array{sent: int, failed: int, invalid: array<int, string>}
-     *         invalid 는 더 이상 유효하지 않은 토큰 — 호출 측에서 지워야 한다.
+     *                                                                    invalid 는 더 이상 유효하지 않은 토큰 — 호출 측에서 지워야 한다.
      */
     public function send(array $tokens, string $title, string $body, array $data = []): array
     {

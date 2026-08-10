@@ -30,6 +30,10 @@ class OrganizationSeeder extends Seeder
         $wh = $this->org(OrgType::WAREHOUSE, 'WH-CENTRAL', '중앙 물류창고');
         $this->user($wh, 'wh1', '창고 담당자');
 
+        // 라이프사이언스(요청) — 병원 대신 물품 요청·사용확정·반납을 수행
+        $life = $this->org(OrgType::LIFE, 'LIFE-SEOUL', '라이프사이언스 서울');
+        $this->user($life, 'life1', '라이프사이언스 담당자');
+
         // 거점병원 5곳
         $hospitals = [
             ['SEOUL', '서울대학교병원', 'seoul'],

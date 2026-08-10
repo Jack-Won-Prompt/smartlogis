@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Usage;
 
+use App\Enums\OrgType;
 use App\Enums\UsageStatus;
 use App\Http\Controllers\Controller;
+use App\Models\Organization;
 use App\Models\Product;
 use App\Models\UsageReport;
 use App\Rules\NotClosedMonth;
@@ -53,19 +55,28 @@ class UsageController extends Controller
     public function store(Request $request, DocumentNoService $docNo): JsonResponse
     {
         $user = $request->user();
+        $isLife = $user->isLife();
         $validated = $request->validate([
+            // 라이프사이언스(요청)는 병원 대신 등록하므로 대상 병원을 선택한다.
+            'hospital_id' => [$isLife ? 'required' : 'nullable', 'integer', 'exists:organizations,id'],
+            // 소급·사후 등록 허용 — 과거 사용일도 가능(마감월만 차단).
             'usage_date' => ['required', 'date', new NotClosedMonth],
             'items' => ['required', 'array', 'min:1'],
             'items.*.product_id' => ['required', 'integer', 'exists:products,id'],
             'items.*.lot_id' => ['required', 'integer', 'exists:product_lots,id'],
             'items.*.qty' => ['required', 'integer', 'min:1'],
             'items.*.dept' => ['nullable', 'string', 'max:50'],
-        ], [], ['usage_date' => '사용일']);
+        ], [], ['usage_date' => '사용일', 'hospital_id' => '병원']);
 
-        $report = DB::transaction(function () use ($validated, $docNo, $user) {
+        // 병원 계정은 자기 병원, 라이프는 선택한 병원. 문서번호는 병원 코드 기준.
+        $hospital = $isLife
+            ? Organization::query()->where('org_type', OrgType::HOSPITAL)->findOrFail((int) $validated['hospital_id'])
+            : $user->organization;
+
+        $report = DB::transaction(function () use ($validated, $docNo, $user, $hospital) {
             $report = UsageReport::create([
-                'report_no' => $docNo->next('UR', $user->organization->code, 'Ym'),
-                'hospital_id' => $user->org_id,
+                'report_no' => $docNo->next('UR', $hospital->code, 'Ym'),
+                'hospital_id' => $hospital->id,
                 'status' => UsageStatus::DRAFT,
                 'usage_date' => $validated['usage_date'],
                 'total_amount' => 0,

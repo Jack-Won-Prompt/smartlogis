@@ -22,6 +22,7 @@ use App\Http\Controllers\Master\SafetyStockMasterController;
 use App\Http\Controllers\Master\UserMasterController;
 use App\Http\Controllers\Outbound\OutboundController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\ReturnController;
 use App\Http\Controllers\Settlement\ClosingController;
 use App\Http\Controllers\Settlement\SettlementController;
 use App\Http\Controllers\Supplier\SupplierController;
@@ -80,7 +81,7 @@ Route::middleware('auth')->group(function () {
     });
 
     // 재고 — 본사/창고/병원
-    Route::middleware('role:HQ,WAREHOUSE,HOSPITAL')->prefix('inventory')->name('inventory.')->group(function () {
+    Route::middleware('role:HQ,WAREHOUSE,HOSPITAL,LIFE')->prefix('inventory')->name('inventory.')->group(function () {
         Route::get('/status', [StockStatusController::class, 'index'])->name('status');
         Route::get('/status/data', [StockStatusController::class, 'data'])->name('status.data');
 
@@ -119,6 +120,16 @@ Route::middleware('auth')->group(function () {
         });
     });
 
+    // 반납(병원 → 창고) — 등록(병원/라이프) → 배송 → 수령확인(창고/본사)
+    Route::prefix('returns')->name('returns.')->controller(ReturnController::class)->group(function () {
+        Route::get('/', 'index')->middleware('role:HQ,WAREHOUSE,HOSPITAL,LIFE')->name('index');
+        Route::get('/data', 'data')->middleware('role:HQ,WAREHOUSE,HOSPITAL,LIFE')->name('data');
+        Route::post('/', 'store')->middleware('role:HOSPITAL,LIFE')->name('store');
+        Route::post('/{return}/ship', 'ship')->middleware('role:HQ,WAREHOUSE,HOSPITAL,LIFE')->name('ship');
+        Route::post('/{return}/receive', 'receive')->middleware('role:HQ,WAREHOUSE')->name('receive');
+        Route::post('/{return}/cancel', 'cancel')->middleware('role:HQ,HOSPITAL,LIFE')->name('cancel');
+    });
+
     // 재고 실사 — 본사/창고/병원
     Route::middleware('role:HQ,WAREHOUSE,HOSPITAL')->prefix('stocktakes')->name('stocktakes.')->group(function () {
         Route::controller(StocktakeController::class)->group(function () {
@@ -134,13 +145,13 @@ Route::middleware('auth')->group(function () {
     // 사용분 — 등록(병원)/승인(본사)/이력
     Route::prefix('usages')->name('usages.')->group(function () {
         Route::controller(UsageController::class)->group(function () {
-            Route::get('/create', 'create')->middleware('role:HOSPITAL')->name('create');
+            Route::get('/create', 'create')->middleware('role:HOSPITAL,LIFE')->name('create');
             Route::get('/approval', 'approval')->middleware('role:HQ')->name('approval');
-            Route::get('/', 'index')->middleware('role:HQ,HOSPITAL')->name('index');
-            Route::get('/data', 'data')->middleware('role:HQ,HOSPITAL')->name('data');
-            Route::get('/{usage}', 'show')->middleware('role:HQ,HOSPITAL')->name('show');
-            Route::post('/', 'store')->middleware('role:HOSPITAL')->name('store');
-            Route::post('/{usage}/submit', 'submit')->middleware('role:HOSPITAL')->name('submit');
+            Route::get('/', 'index')->middleware('role:HQ,HOSPITAL,LIFE')->name('index');
+            Route::get('/data', 'data')->middleware('role:HQ,HOSPITAL,LIFE')->name('data');
+            Route::get('/{usage}', 'show')->middleware('role:HQ,HOSPITAL,LIFE')->name('show');
+            Route::post('/', 'store')->middleware('role:HOSPITAL,LIFE')->name('store');
+            Route::post('/{usage}/submit', 'submit')->middleware('role:HOSPITAL,LIFE')->name('submit');
             Route::post('/{usage}/approve', 'approve')->middleware('role:HQ')->name('approve');
             Route::post('/{usage}/reject', 'reject')->middleware('role:HQ')->name('reject');
         });
