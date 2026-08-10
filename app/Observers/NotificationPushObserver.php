@@ -49,12 +49,13 @@ class NotificationPushObserver
             Log::warning('[noti broadcast] '.$e->getMessage());
         }
 
-        // 3) 이메일 — 중요 알림(위험/공지)만 큐로 발송(과다 발송 방지)
+        // 3) 이메일 — 중요 알림(위험/공지)만 직접(동기) 발송. 큐 워커 불필요.
+        //    afterCommit 이후 실행되며 실패해도 무해(업무 트랜잭션·다른 채널 무영향).
         if ($notification->severity === Severity::CRITICAL || $notification->noti_type === NotiType::NOTICE) {
             try {
                 User::query()->whereIn('id', $userIds)->whereNotNull('email')
                     ->pluck('email')
-                    ->each(fn (string $to) => Mail::to($to)->queue(new NotificationMail($notification)));
+                    ->each(fn (string $to) => Mail::to($to)->send(new NotificationMail($notification)));
             } catch (\Throwable $e) {
                 Log::warning('[noti email] '.$e->getMessage());
             }

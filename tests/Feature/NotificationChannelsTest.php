@@ -43,7 +43,7 @@ it('중요(위험) 알림은 웹 Pusher 브로드캐스트 + 이메일을 발송
     ]));
 
     Event::assertDispatched(NotificationBroadcast::class);
-    Mail::assertQueued(NotificationMail::class);
+    Mail::assertSent(NotificationMail::class);
 });
 
 it('정보(INFO) 알림은 브로드캐스트만 하고 이메일은 보내지 않는다', function () {
@@ -57,7 +57,7 @@ it('정보(INFO) 알림은 브로드캐스트만 하고 이메일은 보내지 �
     ]));
 
     Event::assertDispatched(NotificationBroadcast::class);
-    Mail::assertNothingQueued();
+    Mail::assertNothingSent();
 });
 
 it('공지(NOTICE)는 정보 수준이어도 이메일을 발송한다', function () {
@@ -70,5 +70,5 @@ it('공지(NOTICE)는 정보 수준이어도 이메일을 발송한다', functio
         'target_role' => null, 'target_org_id' => null, 'title' => '전체 공지', 'message' => '전체 공지 내용', 'is_read' => false,
     ]));
 
-    Mail::assertQueued(NotificationMail::class);
+    Mail::assertSent(NotificationMail::class);
 });
