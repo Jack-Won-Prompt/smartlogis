@@ -26,6 +26,7 @@ class StocktakeController extends Controller
     {
         $query = Stocktake::query()->with('organization')->withCount('items')
             ->when($request->string('status')->toString(), fn ($q, $v) => $q->where('status', $v))
+            ->when($request->integer('org_id'), fn ($q, $v) => $q->where('org_id', $v))
             ->orderByDesc('id');
 
         $size = min(max($request->integer('size', 10), 1), 100);
@@ -37,6 +38,7 @@ class StocktakeController extends Controller
             'data' => $p->getCollection()->map(fn (Stocktake $s) => [
                 'id' => $s->id,
                 'stocktake_no' => $s->stocktake_no,
+                'org_id' => $s->org_id,
                 'org_name' => $s->organization->name,
                 'status' => $s->status->value,
                 'status_label' => $s->status->label(),
