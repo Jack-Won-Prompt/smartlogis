@@ -10,6 +10,7 @@ use App\Http\Controllers\Api\V1\InboundController;
 use App\Http\Controllers\Api\V1\InventoryController;
 use App\Http\Controllers\Api\V1\NotificationController;
 use App\Http\Controllers\Api\V1\OutboundController;
+use App\Http\Controllers\Api\V1\ReturnController;
 use App\Http\Controllers\Api\V1\ScanController;
 use App\Http\Controllers\Api\V1\SettlementController;
 use App\Http\Controllers\Api\V1\SupplierController;
@@ -93,6 +94,25 @@ Route::middleware('api.token')->group(function () {
         });
 
         Route::post('/{id}/deliver', [OutboundController::class, 'deliver'])->whereNumber('id');
+    });
+
+    // ---------------------------------------------------------------- 반납
+    // 병원/라이프가 등록 → 배송 → 창고/본사가 수령확인(이때 재고가 이동한다).
+    Route::middleware('role:HQ,WAREHOUSE,HOSPITAL,LIFE')->prefix('returns')->group(function () {
+        Route::get('/', [ReturnController::class, 'index']);
+        Route::get('/{id}', [ReturnController::class, 'show'])->whereNumber('id');
+
+        // 등록은 물품을 보유한 쪽만 — 창고가 자기 앞으로 반납을 만들 수 없다.
+        Route::post('/', [ReturnController::class, 'store'])->middleware('role:HOSPITAL,LIFE');
+
+        Route::post('/{id}/ship', [ReturnController::class, 'ship'])->whereNumber('id');
+
+        // 재고를 실제로 옮기는 단계라 받는 쪽으로 제한한다.
+        Route::post('/{id}/receive', [ReturnController::class, 'receive'])
+            ->whereNumber('id')->middleware('role:HQ,WAREHOUSE');
+
+        Route::post('/{id}/cancel', [ReturnController::class, 'cancel'])
+            ->whereNumber('id')->middleware('role:HQ,HOSPITAL,LIFE');
     });
 
     // ---------------------------------------------------------------- 사용분
