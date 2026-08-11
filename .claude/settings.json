@@ -242,7 +242,22 @@
       "Bash(vendor/bin/pint app/Http/Controllers/Master/SafetyStockMasterController.php config/logistics.php tests/Feature/SafetyStockAutoSuggestTest.php --quiet)",
       "Bash(vendor/bin/pint app/Events/NotificationBroadcast.php app/Mail/NotificationMail.php app/Observers/NotificationPushObserver.php routes/channels.php tests/Feature/NotificationChannelsTest.php --quiet)",
       "Bash(sed -i 's/'\\\\''target_org_id'\\\\'' => $hospital->id, '\\\\''title'\\\\'' => '\\\\''참고'\\\\'', '\\\\''is_read'\\\\'' => false,/'\\\\''target_org_id'\\\\'' => $hospital->id, '\\\\''title'\\\\'' => '\\\\''참고'\\\\'', '\\\\''message'\\\\'' => '\\\\''참고 알림'\\\\'', '\\\\''is_read'\\\\'' => false,/' tests/Feature/NotificationChannelsTest.php)",
-      "Bash(sed -i \"s/'target_role' => null, 'target_org_id' => null, 'title' => '전체 공지', 'is_read' => false,/'target_role' => null, 'target_org_id' => null, 'title' => '전체 공지', 'message' => '전체 공지 내용', 'is_read' => false,/\" tests/Feature/NotificationChannelsTest.php)"
+      "Bash(sed -i \"s/'target_role' => null, 'target_org_id' => null, 'title' => '전체 공지', 'is_read' => false,/'target_role' => null, 'target_org_id' => null, 'title' => '전체 공지', 'message' => '전체 공지 내용', 'is_read' => false,/\" tests/Feature/NotificationChannelsTest.php)",
+      "Bash(echo '{\"name\":\"cap\",\"private\":true}')",
+      "Bash(node prod_check.js)",
+      "Bash(node prod_check2.js)",
+      "Bash(vendor/bin/pint app/Observers/NotificationPushObserver.php app/Mail/NotificationMail.php --quiet)",
+      "Bash(grep -nA14 \"public function store\" app/Http/Controllers/Master/OrganizationMasterController.php)",
+      "Bash(grep -nA14 \"function rules\" app/Http/Controllers/Master/OrganizationMasterController.php)",
+      "Bash(grep -nA14 \"function rules\" app/Http/Controllers/Master/UserMasterController.php)",
+      "Bash(node prod_create_life.js)",
+      "Bash(node prod_find_label.js)",
+      "Bash(grep -nA22 \"public function store\" app/Http/Controllers/Inbound/InboundController.php)",
+      "Bash(node prod_remaining.js)",
+      "Bash(node prod_verify_noti.js)",
+      "Bash(grep -nA10 \"function bulkDestroy\" app/Http/Controllers/Master/UserMasterController.php)",
+      "Bash(node prod_cleanup.js)",
+      "Bash(vendor/bin/pint app/Http/Controllers/Inbound/InboundController.php app/Livewire/NotificationCenter.php tests/Feature/DeleteFeaturesTest.php --quiet)"
     ],
     "additionalDirectories": [
       "\\tmp",

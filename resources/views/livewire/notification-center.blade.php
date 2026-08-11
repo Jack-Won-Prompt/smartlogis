@@ -15,9 +15,14 @@
             </button>
         </div>
 
-        @if($unreadCount > 0)
-            <button wire:click="markAllRead" class="text-sm font-semibold text-brand-600 hover:text-brand-700">모두 읽음</button>
-        @endif
+        <div class="flex items-center gap-3">
+            @if($unreadCount > 0)
+                <button wire:click="markAllRead" class="text-sm font-semibold text-brand-600 hover:text-brand-700">모두 읽음</button>
+            @endif
+            @if(auth()->user()->isHq())
+                <button wire:click="deleteRead" wire:confirm="읽은 알림을 모두 삭제할까요?" class="text-sm font-semibold text-crit-600 hover:text-crit-700">읽은 알림 삭제</button>
+            @endif
+        </div>
     </div>
 
     {{-- 목록 --}}
@@ -48,6 +53,9 @@
                     @unless($noti->is_read)
                         <button wire:click="markRead({{ $noti->id }})" class="rounded-lg px-2.5 py-1 text-xs font-medium text-ink-400 hover:bg-surface-2 hover:text-ink-700">읽음</button>
                     @endunless
+                    @if(auth()->user()->isHq())
+                        <button wire:click="delete({{ $noti->id }})" wire:confirm="이 알림을 삭제할까요?" title="삭제" class="rounded-lg px-2 py-1 text-xs font-medium text-ink-300 hover:bg-crit-100 hover:text-crit-600">🗑</button>
+                    @endif
                 </div>
             </div>
         @empty

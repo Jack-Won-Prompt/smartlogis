@@ -124,6 +124,20 @@ class InboundController extends Controller
         return response()->json(['message' => "입고 {$inbound->inbound_no} 확정 완료 — 재고에 반영되었습니다."]);
     }
 
+    /** 입고 삭제 — 확정(재고 반영) 전 문서만. 확정 건은 재고 무결성 위해 차단. */
+    public function destroy(Inbound $inbound): JsonResponse
+    {
+        if ($inbound->status === InboundStatus::CONFIRMED) {
+            return response()->json(['message' => '이미 확정(재고 반영)된 입고는 삭제할 수 없습니다.'], 409);
+        }
+
+        $no = $inbound->inbound_no;
+        $inbound->items()->delete();
+        $inbound->delete();
+
+        return response()->json(['message' => "입고 {$no} 을(를) 삭제했습니다."]);
+    }
+
     public function asn(): View
     {
         return view('inbound.asn');

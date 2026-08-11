@@ -43,6 +43,26 @@ class NotificationCenter extends Component
         $this->dispatch('toast', message: "알림 {$count}건을 읽음 처리했습니다.", tone: 'ok');
     }
 
+    /** 알림 삭제 — 본사(HQ) 전용. 알림은 공유 데이터라 관리자만 정리한다. */
+    public function delete(int $id): void
+    {
+        if (! Auth::user()?->isHq()) {
+            return;
+        }
+        Notification::query()->whereKey($id)->delete();
+    }
+
+    /** 읽은 알림 일괄 삭제 — 본사(HQ) 전용. */
+    public function deleteRead(): void
+    {
+        if (! Auth::user()?->isHq()) {
+            return;
+        }
+        $count = Notification::query()->where('is_read', true)->delete();
+        $this->resetPage();
+        $this->dispatch('toast', message: "읽은 알림 {$count}건을 삭제했습니다.", tone: 'ok');
+    }
+
     /** @return Builder<Notification> */
     private function baseQuery()
     {

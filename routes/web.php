@@ -104,6 +104,7 @@ Route::middleware('auth')->group(function () {
             Route::post('/', 'store')->name('store');
             Route::get('/{inbound}', 'show')->name('show');
             Route::post('/{inbound}/confirm', 'confirm')->name('confirm');
+            Route::delete('/{inbound}', 'destroy')->middleware('role:HQ,WAREHOUSE')->name('destroy');
         });
     });
 

@@ -37,6 +37,7 @@
             </div>
             <div class="flex justify-end gap-2 border-t border-line px-6 py-4">
                 <button @click="show=false" class="rounded-xl border border-line px-4 py-2.5 text-sm font-semibold text-ink-600 hover:bg-surface-2">닫기</button>
+                <button type="button" @click="remove()" :disabled="saving" class="mr-auto rounded-xl border border-crit-500/40 px-4 py-2.5 text-sm font-semibold text-crit-600 hover:bg-crit-100 disabled:opacity-50">삭제</button>
                 <button type="button" @click="window.open(`/inbounds/${doc.id}/labels`,'_blank')" class="rounded-xl border border-line px-4 py-2.5 text-sm font-semibold text-brand-600 hover:bg-brand-50">🏷 라벨 출력</button>
                 <button @click="confirm()" :disabled="saving" class="rounded-xl bg-brand-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-brand-700 disabled:opacity-50">입고 확정</button>
             </div>
@@ -79,6 +80,16 @@
                     this.saving=false;
                     if(res.ok){ window.toast(data.message,'ok','입고 확정'); this.show=false; recvGrid.refresh(); }
                     else { window.toast(data.message||'확정 실패','crit'); }
+                },
+                async remove(){
+                    const ok = await window.confirmDialog({ title:'입고 삭제', message:`${this.doc.inbound_no} 입고 문서를 삭제할까요? (확정 전 문서만 삭제됩니다)`, tone:'crit', confirmText:'삭제' });
+                    if(!ok) return;
+                    this.saving=true;
+                    const res = await fetch(`{{ url('inbounds') }}/${this.doc.id}`, { method:'DELETE', headers:{'X-CSRF-TOKEN':document.querySelector('meta[name=csrf-token]').content,Accept:'application/json'} });
+                    const data = await res.json().catch(()=>({}));
+                    this.saving=false;
+                    if(res.ok){ window.toast(data.message||'삭제했습니다.','ok','입고 삭제'); this.show=false; recvGrid.refresh(); }
+                    else { window.toast(data.message||'삭제 실패','crit'); }
                 },
             };
         }
