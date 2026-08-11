@@ -7,6 +7,9 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <link rel="icon" type="image/svg+xml" href="{{ asset('favicon.svg') }}">
 
+    {{-- 세션 만료 등으로 로그인 화면이 워크스페이스 iframe 탭 안에 열리면 최상위 창을 로그인으로 튕겨낸다. --}}
+    <script>if (window.top !== window.self) { try { window.top.location.href = '{{ route('login') }}'; } catch (e) { window.location.href = '{{ route('login') }}'; } }</script>
+
     <title>{{ $title ? $title.' · ' : '' }}SmartLogis</title>
 
     @vite(['resources/css/app.css', 'resources/js/app.js'])
