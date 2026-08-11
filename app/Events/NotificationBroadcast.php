@@ -8,14 +8,15 @@ use App\Models\Notification;
 use Illuminate\Broadcasting\Channel;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Broadcasting\PrivateChannel;
-use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
+use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
 /**
  * 알림 실시간 브로드캐스트(웹 Pusher) — 수신 대상 사용자 개인 채널로 전송.
+ * ShouldBroadcastNow: 큐 워커 없이 동기 전송(이메일 직접 발송과 동일 방침).
  */
-class NotificationBroadcast implements ShouldBroadcast
+class NotificationBroadcast implements ShouldBroadcastNow
 {
     use Dispatchable;
     use InteractsWithSockets;
