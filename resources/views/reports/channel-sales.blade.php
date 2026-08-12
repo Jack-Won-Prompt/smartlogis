@@ -10,6 +10,7 @@
             <label class="mb-1 block text-xs font-medium text-ink-500">종료일</label>
             <input id="f-to" type="date" class="rounded-lg border-line bg-surface-1 py-2 text-sm focus:border-brand-500 focus:ring-2 focus:ring-brand-400/25">
         </div>
+        <x-hospital-filter :roles="['HQ','LIFE']" />
         <x-slot:actions><button id="f-apply" class="btn-primary !py-2 !text-sm">조회</button></x-slot:actions>
     </x-filter-bar>
 
@@ -39,6 +40,7 @@
             const url = new URL('{{ route('reports.channel-sales.data') }}', location.origin);
             const f = document.getElementById('f-from').value, t = document.getElementById('f-to').value;
             if (f) url.searchParams.set('date_from', f); if (t) url.searchParams.set('date_to', t);
+            const h = (document.getElementById('f-hospital')||{}).value; if (h) url.searchParams.set('hospital_id', h);
             const r = await fetch(url, { headers:{Accept:'application/json','X-Requested-With':'XMLHttpRequest'} });
             const d = await r.json();
             document.getElementById('total-amount').textContent = won(d.total);
@@ -60,6 +62,7 @@
         }
         window.addEventListener('DOMContentLoaded', () => {
             document.getElementById('f-apply').addEventListener('click', loadReport);
+            document.getElementById('f-hospital')?.addEventListener('change', loadReport);
             loadReport();
         });
     </script>

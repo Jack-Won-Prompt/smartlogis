@@ -20,6 +20,7 @@
                 <option value="">전체</option>@foreach($statuses as $v=>$l)<option value="{{ $v }}">{{ $l }}</option>@endforeach
             </select>
         </div>
+        <x-hospital-filter :roles="['HQ','WAREHOUSE']" />
     </x-filter-bar>
 
     <div class="mb-4 mt-4 flex items-center justify-end" x-data>
@@ -96,7 +97,7 @@
             obGrid = window.WWGrid.connect('#ob-grid', {
                 dataUrl: '{{ route('outbounds.data') }}', readonly:true, screenName:'출고지시',
                 onRowClick:(row)=>{ const map={ APPROVED:'pick', PICKING:'ship', SHIPPED:'deliver' }; const a=map[row.status]; if(a) advance(row.id, a); else if(row.status==='DELIVERED') window.open(`/outbounds/${row.id}/labels`,'_blank'); else window.toast('진행할 다음 단계가 없습니다.','info'); },
-                params: () => ({ keyword:f('f-keyword'), status:f('f-status') }),
+                params: () => ({ keyword:f('f-keyword'), status:f('f-status'), hospital_id:(document.getElementById('f-hospital')||{}).value }),
                 columns: [
                     { title:'출고번호', field:'outbound_no', width:170 },
                     { title:'창고', field:'warehouse_name', width:140 },
@@ -109,6 +110,7 @@
             let t;
             document.getElementById('f-keyword').addEventListener('input',()=>{clearTimeout(t);t=setTimeout(()=>obGrid.refresh(),350);});
             document.getElementById('f-status').addEventListener('change',()=>obGrid.refresh());
+            document.getElementById('f-hospital')?.addEventListener('change',()=>obGrid.refresh());
         });
 
         async function advance(id, act){

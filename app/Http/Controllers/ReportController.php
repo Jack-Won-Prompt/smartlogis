@@ -30,6 +30,7 @@ class ReportController extends Controller
             ->where('status', UsageStatus::APPROVED)
             ->when($request->string('date_from')->toString(), fn ($q, $v) => $q->whereDate('usage_date', '>=', $v))
             ->when($request->string('date_to')->toString(), fn ($q, $v) => $q->whereDate('usage_date', '<=', $v))
+            ->when($request->integer('hospital_id'), fn ($q, $v) => $q->where('hospital_id', $v))
             ->groupBy('sales_channel')
             ->selectRaw('sales_channel, COUNT(*) as cnt, SUM(total_amount) as amount')
             ->get();
@@ -72,13 +73,16 @@ class ReportController extends Controller
             ->where('ur.status', UsageStatus::APPROVED->value)
             ->when($request->string('date_from')->toString(), fn ($q, $v) => $q->whereDate('ur.usage_date', '>=', $v))
             ->when($request->string('date_to')->toString(), fn ($q, $v) => $q->whereDate('ur.usage_date', '<=', $v))
+            ->when($request->integer('hospital_id'), fn ($q, $v) => $q->where('ur.hospital_id', $v))
             ->groupBy('ui.product_id')
             ->selectRaw('ui.product_id, SUM(ui.qty) as used_qty, SUM(ui.amount) as amount')
             ->get()
             ->keyBy('product_id');
 
         // 품목별 현재고(전 위치 합).
-        $stock = DB::table('stock_balances')->groupBy('product_id')
+        $stock = DB::table('stock_balances')
+            ->when($request->integer('hospital_id'), fn ($q, $v) => $q->where('org_id', $v))
+            ->groupBy('product_id')
             ->selectRaw('product_id, SUM(qty) as stock')->pluck('stock', 'product_id');
 
         $kw = $request->string('keyword')->toString();

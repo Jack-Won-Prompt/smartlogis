@@ -32,6 +32,7 @@ class UsageController extends Controller
             ->when($request->string('status')->toString(), fn ($q, $v) => $q->where('status', $v))
             ->when($request->boolean('pending'), fn ($q) => $q->where('status', UsageStatus::SUBMITTED->value))
             ->when($request->string('keyword')->toString(), fn ($q, $v) => $q->where('report_no', 'like', "%{$v}%"))
+            ->when($request->integer('hospital_id'), fn ($q, $v) => $q->where('hospital_id', $v))
             ->orderByDesc('id');
 
         $size = min(max($request->integer('size', 10), 1), 100);

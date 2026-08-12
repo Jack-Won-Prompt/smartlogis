@@ -24,6 +24,7 @@ class SettlementController extends Controller
         $query = Settlement::query()->with('organization')
             ->when($request->string('year_month')->toString(), fn ($q, $v) => $q->where('year_month', $v))
             ->when($request->string('settle_type')->toString(), fn ($q, $v) => $q->where('settle_type', $v))
+            ->when($request->integer('hospital_id'), fn ($q, $v) => $q->where('org_id', $v))
             ->orderByDesc('year_month')->orderBy('settle_type');
 
         // 역할별 스코프

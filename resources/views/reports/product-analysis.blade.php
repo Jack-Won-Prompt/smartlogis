@@ -14,6 +14,7 @@
             <label class="mb-1 block text-xs font-medium text-ink-500">종료일</label>
             <input id="f-to" type="date" class="rounded-lg border-line bg-surface-1 py-2 text-sm focus:border-brand-500 focus:ring-2 focus:ring-brand-400/25">
         </div>
+        <x-hospital-filter :roles="['HQ','LIFE']" />
         <x-slot:actions><button id="f-apply" class="btn-primary !py-2 !text-sm">조회</button></x-slot:actions>
     </x-filter-bar>
 
@@ -26,7 +27,7 @@
             const f = id => document.getElementById(id).value;
             const grid = window.WWGrid.connect('#pa-grid', {
                 dataUrl: '{{ route('reports.product-analysis.data') }}', readonly: true, screenName: '상품분석',
-                params: () => ({ keyword: f('f-keyword'), date_from: f('f-from'), date_to: f('f-to') }),
+                params: () => ({ keyword: f('f-keyword'), date_from: f('f-from'), date_to: f('f-to'), hospital_id:(document.getElementById('f-hospital')||{}).value }),
                 columns: [
                     { title:'제품코드', field:'product_code', width:120 },
                     { title:'제품명', field:'product_name', width:240 },
@@ -37,6 +38,7 @@
                 ],
             });
             document.getElementById('f-apply').addEventListener('click', () => grid.refresh());
+            document.getElementById('f-hospital')?.addEventListener('change', () => grid.refresh());
             let t; document.getElementById('f-keyword').addEventListener('input', () => { clearTimeout(t); t = setTimeout(() => grid.refresh(), 350); });
         });
     </script>

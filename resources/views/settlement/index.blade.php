@@ -14,6 +14,7 @@
                 <option value="">전체</option>@foreach($types as $v=>$l)<option value="{{ $v }}">{{ $l }}</option>@endforeach
             </select>
         </div>
+        <x-hospital-filter :roles="['HQ']" />
     </x-filter-bar>
 
     <x-ww-grid-assets />
@@ -27,7 +28,7 @@
             function f(id){ return document.getElementById(id).value.replace('-','-'); }
             const grid = window.WWGrid.connect('#st-grid', {
                 dataUrl:'{{ route('settlements.data') }}', readonly:true, screenName:'정산',
-                params:()=>({ year_month:document.getElementById('f-ym').value, settle_type:document.getElementById('f-type').value }),
+                params:()=>({ year_month:document.getElementById('f-ym').value, settle_type:document.getElementById('f-type').value, hospital_id:(document.getElementById('f-hospital')||{}).value }),
                 columns:[
                     { title:'정산월', field:'year_month', width:110 },
                     { title:'유형', field:'settle_label', width:90 },
@@ -38,6 +39,7 @@
                 ],
             });
             ['f-ym','f-type'].forEach(id=>document.getElementById(id).addEventListener('change',()=>grid.refresh()));
+            document.getElementById('f-hospital')?.addEventListener('change',()=>grid.refresh());
         });
     </script>
     @endpush

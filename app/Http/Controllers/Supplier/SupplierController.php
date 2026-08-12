@@ -37,6 +37,7 @@ class SupplierController extends Controller
             ->where('o.org_type', OrgType::HOSPITAL->value)
             ->where('b.qty', '>', 0)
             ->when($supplierId, fn ($q) => $q->where('p.supplier_id', $supplierId))
+            ->when($request->integer('hospital_id'), fn ($q, $v) => $q->where('o.id', $v))
             ->when($request->string('keyword')->toString(), fn ($q, $kw) => $q->where(fn ($s) => $s
                 ->where('p.product_name', 'like', "%{$kw}%")->orWhere('o.name', 'like', "%{$kw}%")))
             ->orderBy('p.product_name')->orderBy('o.name')

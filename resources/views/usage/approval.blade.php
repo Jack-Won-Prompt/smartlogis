@@ -15,6 +15,7 @@
                 <option value="">전체</option>@foreach($statuses as $v=>$l)<option value="{{ $v }}">{{ $l }}</option>@endforeach
             </select>
         </div>
+        <x-hospital-filter :roles="['HQ']" />
     </x-filter-bar>
 
     <x-ww-grid-assets />
@@ -78,7 +79,7 @@
             apGrid = window.WWGrid.connect('#ap-grid', {
                 dataUrl:'{{ route('usages.data') }}', readonly:true, screenName:'사용분승인',
                 onRowClick:(row)=>window.dispatchEvent(new CustomEvent('ap-open',{detail:row.id})),
-                params:()=>({ keyword:f('f-keyword'), status:f('f-status') }),
+                params:()=>({ keyword:f('f-keyword'), status:f('f-status'), hospital_id:(document.getElementById('f-hospital')||{}).value }),
                 columns:[
                     { title:'사용분번호', field:'report_no', width:200 },
                     { title:'병원', field:'hospital_name', width:150 },
@@ -91,6 +92,7 @@
             let t;
             document.getElementById('f-keyword').addEventListener('input',()=>{clearTimeout(t);t=setTimeout(()=>apGrid.refresh(),350);});
             document.getElementById('f-status').addEventListener('change',()=>apGrid.refresh());
+            document.getElementById('f-hospital')?.addEventListener('change',()=>apGrid.refresh());
         });
 
         function approval(){
