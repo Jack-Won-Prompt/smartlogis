@@ -58,6 +58,32 @@ class ReturnController extends Controller
         ]);
     }
 
+    public function show(StockReturn $return): JsonResponse
+    {
+        $return->load(['hospital:id,name', 'warehouse:id,name', 'items.product:id,product_code,product_name', 'items.lot:id,lot_no,expiry_date']);
+
+        return response()->json([
+            'id' => $return->id,
+            'return_no' => $return->return_no,
+            'status' => $return->status->value,
+            'status_label' => $return->status->label(),
+            'hospital' => $return->hospital?->name,
+            'warehouse' => $return->warehouse?->name,
+            'reason' => $return->reason,
+            'shipped_at' => $return->shipped_at?->timezone('Asia/Seoul')?->format('Y-m-d H:i'),
+            'received_at' => $return->received_at?->timezone('Asia/Seoul')?->format('Y-m-d H:i'),
+            'created_at' => $return->created_at?->timezone('Asia/Seoul')?->format('Y-m-d H:i'),
+            'items' => $return->items->map(fn ($it) => [
+                'id' => $it->id,
+                'product_code' => $it->product?->product_code,
+                'product_name' => $it->product?->product_name,
+                'lot_no' => $it->lot?->lot_no,
+                'expiry_date' => $it->lot?->expiry_date?->toDateString(),
+                'qty' => $it->qty,
+            ])->all(),
+        ]);
+    }
+
     public function store(Request $request, ReturnService $service): JsonResponse
     {
         $user = $request->user();

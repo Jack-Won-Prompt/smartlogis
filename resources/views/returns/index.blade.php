@@ -1,4 +1,4 @@
-@php $me = auth()->user(); $canRegister = $me->isHospital() || $me->isLife(); $canReceive = $me->isHq() || $me->isWarehouse(); @endphp
+@php $me = auth()->user(); $canRegister = $me->isHospital() || $me->isLife(); $canReceive = $me->isHq() || $me->isWarehouse(); $canCancel = $me->isHq() || $me->isHospital() || $me->isLife(); @endphp
 <x-app-layout title="반납 처리" breadcrumb="입출고 / 반납 처리">
     <x-page-header title="반납 처리" subtitle="미사용분을 병원 → 창고로 반납합니다. 등록 → 배송 → 수령확인(창고 재고 복귀) 순으로 처리됩니다.">
         @if($canRegister)
@@ -31,16 +31,48 @@
     </x-filter-bar>
 
     <x-ww-grid-assets />
-    <div id="return-grid" class="mt-4"></div>
-
-    {{-- 선택 행 액션 바 --}}
-    <div id="action-bar" class="mt-3 hidden items-center gap-2 rounded-xl border border-line bg-white p-3 text-sm shadow-sm">
-        <span id="sel-info" class="font-medium text-ink-700"></span>
-        <span class="flex-1"></span>
-        <button id="btn-ship" class="hidden rounded-lg border border-line px-3 py-1.5 font-medium text-brand-600 hover:bg-brand-50">배송 시작</button>
-        @if($canReceive)<button id="btn-receive" class="hidden rounded-lg bg-brand-600 px-3 py-1.5 font-semibold text-white hover:bg-brand-700">수령확인(재고 복귀)</button>@endif
-        <button id="btn-cancel" class="hidden rounded-lg border border-crit-500/40 px-3 py-1.5 font-medium text-crit-600 hover:bg-crit-100">취소</button>
-    </div>
+    <x-list-detail :url-base="url('returns')" items-label="품목">
+        <x-slot:list><div id="return-grid"></div></x-slot:list>
+        <x-slot:info>
+            <div class="flex justify-between"><span class="text-ink-400">병원</span><span class="font-medium text-ink-800" x-text="doc.hospital"></span></div>
+            <div class="flex justify-between"><span class="text-ink-400">창고</span><span x-text="doc.warehouse"></span></div>
+            <div class="flex justify-between"><span class="text-ink-400">등록일</span><span x-text="doc.created_at || '—'"></span></div>
+            <div class="flex justify-between"><span class="text-ink-400">배송 시작</span><span x-text="doc.shipped_at || '—'"></span></div>
+            <div class="flex justify-between"><span class="text-ink-400">수령 확인</span><span x-text="doc.received_at || '—'"></span></div>
+            <template x-if="doc.reason"><div class="rounded-lg bg-surface-2 px-3 py-2 text-xs text-ink-600"><b>사유</b> <span x-text="doc.reason"></span></div></template>
+        </x-slot:info>
+        <x-slot:items>
+            <table class="w-full text-sm">
+                <thead><tr class="border-b border-line text-left text-xs text-ink-500"><th class="py-2">제품</th><th class="py-2">Lot</th><th class="py-2">유통기한</th><th class="py-2 text-right">수량</th></tr></thead>
+                <tbody>
+                    <template x-for="(it,i) in (doc.items||[])" :key="i">
+                        <tr class="border-b border-line/60">
+                            <td class="py-2"><span class="font-medium text-ink-900" x-text="it.product_name"></span> <span class="font-mono text-[11px] text-ink-300" x-text="it.product_code"></span></td>
+                            <td class="py-2 font-mono text-xs" x-text="it.lot_no"></td>
+                            <td class="py-2 font-mono text-xs" x-text="it.expiry_date || '—'"></td>
+                            <td class="py-2 text-right font-mono font-semibold" x-text="Number(it.qty).toLocaleString()"></td>
+                        </tr>
+                    </template>
+                </tbody>
+            </table>
+        </x-slot:items>
+        <x-slot:actions>
+            <template x-if="doc.status==='REQUESTED'">
+                <button @click="act('{{ url('returns') }}/'+doc.id+'/ship')" :disabled="saving" class="rounded-xl border border-line px-4 py-2 text-sm font-semibold text-brand-600 hover:bg-brand-50">배송 시작</button>
+            </template>
+            @if($canReceive)
+            <template x-if="doc.status==='REQUESTED' || doc.status==='SHIPPING'">
+                <button @click="act('{{ url('returns') }}/'+doc.id+'/receive',{confirm:{title:'수령확인',message:'수령확인하면 병원 재고가 차감되고 창고 재고가 복귀됩니다. 진행할까요?',confirmText:'수령확인',tone:'brand'}})" :disabled="saving" class="rounded-xl bg-brand-600 px-5 py-2 text-sm font-semibold text-white hover:bg-brand-700 disabled:opacity-50">수령확인(재고 복귀)</button>
+            </template>
+            @endif
+            @if($canCancel)
+            <template x-if="doc.status!=='RECEIVED' && doc.status!=='CANCELED'">
+                <button @click="act('{{ url('returns') }}/'+doc.id+'/cancel',{confirm:{title:'반납 취소',message:'이 반납을 취소할까요?',confirmText:'취소',tone:'crit'}})" :disabled="saving" class="rounded-xl border border-crit-500/40 px-4 py-2 text-sm font-semibold text-crit-600 hover:bg-crit-100">취소</button>
+            </template>
+            @endif
+            <template x-if="doc.status==='RECEIVED' || doc.status==='CANCELED'"><span class="text-xs text-ink-400">완료/취소된 반납입니다.</span></template>
+        </x-slot:actions>
+    </x-list-detail>
 
     {{-- 새 반납 등록 모달 --}}
     @if($canRegister)
@@ -76,12 +108,13 @@
     <script>
         const IS_HOSPITAL = @json($me->isHospital());
         const csrf = () => document.querySelector('meta[name=csrf-token]').content;
-        let grid, selected = null;
+        let grid;
 
         window.addEventListener('DOMContentLoaded', () => {
             const f = id => document.getElementById(id)?.value || '';
             grid = window.WWGrid.connect('#return-grid', {
                 dataUrl: '{{ route('returns.data') }}', readonly: true, screenName: '반납',
+                onRowDblClick: (row) => window.dispatchEvent(new CustomEvent('detail-open', { detail: row.id })),
                 params: () => ({ status: f('f-status'), hospital_id: f('f-hospital') }),
                 columns: [
                     { title:'반납번호', field:'return_no', width:150 },
@@ -91,33 +124,10 @@
                     { title:'상태', field:'status_label', width:110 },
                     { title:'등록일', field:'created_at', width:150 },
                 ],
-                onRowClick: (row) => selectRow(row),
             });
             document.getElementById('f-status').addEventListener('change', () => grid.refresh());
             document.getElementById('f-hospital')?.addEventListener('change', () => grid.refresh());
         });
-
-        function selectRow(row) {
-            selected = row;
-            const bar = document.getElementById('action-bar');
-            bar.classList.remove('hidden'); bar.classList.add('flex');
-            document.getElementById('sel-info').textContent = `${row.return_no} · ${row.hospital} · ${row.status_label}`;
-            const show = (id, on) => { const el = document.getElementById(id); if(el) el.classList.toggle('hidden', !on); };
-            show('btn-ship', row.status === 'REQUESTED');
-            show('btn-receive', row.status === 'REQUESTED' || row.status === 'SHIPPING');
-            show('btn-cancel', row.status !== 'RECEIVED' && row.status !== 'CANCELED');
-        }
-
-        async function act(path) {
-            if (!selected) return;
-            const r = await fetch(`/returns/${selected.id}/${path}`, { method:'POST', headers:{'X-CSRF-TOKEN':csrf(),'Accept':'application/json'} });
-            const d = await r.json().catch(()=>({}));
-            if (r.ok) { window.toast?.('처리했습니다.', 'ok'); grid.refresh(); document.getElementById('action-bar').classList.add('hidden'); selected=null; }
-            else window.toast?.(d.message || '처리에 실패했습니다.', 'crit');
-        }
-        document.getElementById('btn-ship')?.addEventListener('click', () => act('ship'));
-        document.getElementById('btn-receive')?.addEventListener('click', () => window.confirmDialog({title:'수령확인', message:'수령확인하면 병원 재고가 차감되고 창고 재고가 복귀됩니다. 진행할까요?', confirmText:'수령확인', tone:'brand'}).then(ok=>{ if(ok) act('receive'); }));
-        document.getElementById('btn-cancel')?.addEventListener('click', () => window.confirmDialog({title:'반납 취소', message:'이 반납을 취소할까요?', confirmText:'취소', tone:'crit'}).then(ok=>{ if(ok) act('cancel'); }));
 
         // ── 등록 모달 ──
         function openReturnModal(){ const m=document.getElementById('return-modal'); m.classList.remove('hidden'); m.classList.add('flex'); if(IS_HOSPITAL) loadStock(); }

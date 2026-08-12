@@ -28,6 +28,8 @@ class OutboundController extends Controller
             ->when($request->string('status')->toString(), fn ($q, $v) => $q->where('status', $v))
             ->when($request->string('keyword')->toString(), fn ($q, $v) => $q->where('outbound_no', 'like', "%{$v}%"))
             ->when($request->integer('hospital_id'), fn ($q, $v) => $q->where('hospital_id', $v))
+            ->when($request->string('mode')->toString() === 'picking', fn ($q) => $q->whereIn('status', [OutboundStatus::DRAFT->value, OutboundStatus::APPROVED->value, OutboundStatus::PICKING->value]))
+            ->when($request->string('mode')->toString() === 'delivery', fn ($q) => $q->whereIn('status', [OutboundStatus::SHIPPED->value, OutboundStatus::DELIVERED->value]))
             ->orderByDesc('id');
 
         $size = min(max($request->integer('size', 10), 1), 100);
@@ -91,12 +93,18 @@ class OutboundController extends Controller
             'outbound_no' => $outbound->outbound_no,
             'status' => $outbound->status->value,
             'status_label' => $outbound->status->label(),
+            'source_label' => $outbound->source_type->label(),
+            'planned_date' => $outbound->planned_date?->toDateString(),
+            'shipped_at' => $outbound->shipped_at?->timezone('Asia/Seoul')?->format('Y-m-d H:i'),
+            'delivered_at' => $outbound->delivered_at?->timezone('Asia/Seoul')?->format('Y-m-d H:i'),
             'warehouse_name' => $outbound->warehouse->name,
             'hospital_name' => $outbound->hospital->name,
             'items' => $outbound->items->map(fn ($it) => [
+                'id' => $it->id,
                 'product_code' => $it->product->product_code,
                 'product_name' => $it->product->product_name,
                 'lot_no' => $it->lot?->lot_no,
+                'lot_assigned' => $it->lot_id !== null,
                 'qty' => $it->qty,
             ])->all(),
         ]);
@@ -104,9 +112,19 @@ class OutboundController extends Controller
 
     public function pick(Outbound $outbound, OutboundService $service, Request $request): JsonResponse
     {
-        $service->pick($outbound, $request->user()?->id);
+        $validated = $request->validate([
+            'item_ids' => ['nullable', 'array'],
+            'item_ids.*' => ['integer'],
+        ]);
+        $itemIds = $validated['item_ids'] ?? null;
+        $service->pick($outbound, $request->user()?->id, $itemIds !== null && $itemIds !== [] ? $itemIds : null);
 
-        return response()->json(['message' => "{$outbound->outbound_no} FEFO 피킹 완료 — 창고 재고가 차감되었습니다."]);
+        $remaining = $outbound->fresh()?->items()->whereNull('lot_id')->count() ?? 0;
+        $msg = $remaining > 0
+            ? "{$outbound->outbound_no} 선택 품목 피킹 완료 — 미피킹 {$remaining}건 남음."
+            : "{$outbound->outbound_no} FEFO 피킹 완료 — 창고 재고가 차감되었습니다.";
+
+        return response()->json(['message' => $msg]);
     }
 
     public function ship(Outbound $outbound, OutboundService $service): JsonResponse
@@ -123,9 +141,15 @@ class OutboundController extends Controller
         return response()->json(['message' => "{$outbound->outbound_no} 배송 완료 — 병원 재고에 반영되었습니다."]);
     }
 
-    public function index(): View
+    public function index(Request $request): View
     {
-        // 출고 지시·피킹·배송을 한 화면(생애주기)에서 처리한다.
-        return view('outbound.index');
+        // 라우트에 따라 모드 구분: 출고 지시 / 피킹·출고 / 배송 현황
+        $mode = match ($request->route()?->getName()) {
+            'outbounds.picking' => 'picking',
+            'outbounds.delivery' => 'delivery',
+            default => 'order',
+        };
+
+        return view('outbound.index', ['mode' => $mode]);
     }
 }

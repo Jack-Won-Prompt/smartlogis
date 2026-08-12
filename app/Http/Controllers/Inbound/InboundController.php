@@ -102,6 +102,8 @@ class InboundController extends Controller
             'inbound_no' => $inbound->inbound_no,
             'status' => $inbound->status->value,
             'status_label' => $inbound->status->label(),
+            'direction_label' => $inbound->direction->label(),
+            'planned_date' => $inbound->planned_date?->toDateString(),
             'from_name' => $inbound->fromOrg->name,
             'to_name' => $inbound->toOrg->name,
             'items' => $inbound->items->map(fn ($it) => [

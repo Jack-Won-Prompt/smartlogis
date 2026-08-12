@@ -21,7 +21,9 @@ use Illuminate\Support\Carbon;
  * @property int $warehouse_id
  * @property ReturnStatus $status
  * @property string|null $reason
+ * @property Carbon|null $shipped_at
  * @property Carbon|null $received_at
+ * @property Carbon|null $created_at
  */
 #[ScopedBy(HospitalScope::class)]
 class StockReturn extends Model

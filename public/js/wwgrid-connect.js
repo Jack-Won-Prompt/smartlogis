@@ -55,7 +55,7 @@
         connect(selector, opts) {
             const {
                 dataUrl, batchUrl, columns, params = () => ({}), rowKey = 'id',
-                readonly = false, defaults = {}, onRowClick, screenName = 'grid',
+                readonly = false, defaults = {}, onRowClick, onRowDblClick, screenName = 'grid',
                 cap = 500, height = null, summary = false, buttons = {},
                 paged = false, pageSize = 30,   // paged:true → 서버 페이징(10/30/50/100)
                 exportButton = true, exportFilename = null,   // 우상단 엑셀 다운로드(현재 필터 전체 데이터)
@@ -240,6 +240,19 @@
                     if (isNaN(ri)) return;
                     const row = grid.getData()[ri];
                     if (row) onRowClick(row, e);
+                });
+            }
+
+            // 행 더블클릭 → 상세(탭) 열기
+            if (typeof onRowDblClick === 'function') {
+                host.addEventListener('dblclick', (e) => {
+                    if (e.target.closest('input,button,a,.cg-checkbox-display,.cg-col-check')) return;
+                    const cell = e.target.closest('[data-row-index]');
+                    if (!cell) return;
+                    const ri = parseInt(cell.dataset.rowIndex, 10);
+                    if (isNaN(ri)) return;
+                    const row = grid.getData()[ri];
+                    if (row) onRowDblClick(row, e);
                 });
             }
 

@@ -132,6 +132,7 @@ Route::middleware('auth')->group(function () {
     Route::prefix('returns')->name('returns.')->controller(ReturnController::class)->group(function () {
         Route::get('/', 'index')->middleware('role:HQ,WAREHOUSE,HOSPITAL,LIFE')->name('index');
         Route::get('/data', 'data')->middleware('role:HQ,WAREHOUSE,HOSPITAL,LIFE')->name('data');
+        Route::get('/{return}', 'show')->middleware('role:HQ,WAREHOUSE,HOSPITAL,LIFE')->name('show');
         Route::post('/', 'store')->middleware('role:HOSPITAL,LIFE')->name('store');
         Route::post('/{return}/ship', 'ship')->middleware('role:HQ,WAREHOUSE,HOSPITAL,LIFE')->name('ship');
         Route::post('/{return}/receive', 'receive')->middleware('role:HQ,WAREHOUSE')->name('receive');

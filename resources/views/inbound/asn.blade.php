@@ -4,6 +4,7 @@
     $warehouses = Organization::where('org_type', OrgType::WAREHOUSE)->orderBy('name')->get(['id','name']);
     $products = Product::where('is_active', true)->orderBy('product_name')->get(['id','product_name','product_code','gtin']);
     $statuses = InboundStatus::options();
+    $me = auth()->user(); $canDelete = $me->isHq() || $me->isWarehouse();
 @endphp
 
 <x-app-layout title="입고 예정(ASN)" breadcrumb="입출고 / 입고 예정(ASN)">
@@ -29,7 +30,38 @@
     </div>
 
     <x-ww-grid-assets />
-    <div id="asn-grid"></div>
+    <x-list-detail :url-base="url('inbounds')" items-label="품목">
+        <x-slot:list><div id="asn-grid"></div></x-slot:list>
+        <x-slot:info>
+            <div class="flex justify-between"><span class="text-ink-400">방향</span><span class="font-medium text-ink-800" x-text="doc.direction_label"></span></div>
+            <div class="flex justify-between"><span class="text-ink-400">출발</span><span x-text="doc.from_name"></span></div>
+            <div class="flex justify-between"><span class="text-ink-400">도착</span><span x-text="doc.to_name"></span></div>
+            <div class="flex justify-between"><span class="text-ink-400">예정일</span><span x-text="doc.planned_date || '—'"></span></div>
+        </x-slot:info>
+        <x-slot:items>
+            <table class="w-full text-sm">
+                <thead><tr class="border-b border-line text-left text-xs text-ink-500"><th class="py-2">제품</th><th class="py-2">Lot</th><th class="py-2">유통기한</th><th class="py-2 text-right">수량</th></tr></thead>
+                <tbody>
+                    <template x-for="(it,i) in (doc.items||[])" :key="i">
+                        <tr class="border-b border-line/60">
+                            <td class="py-2"><span class="font-medium text-ink-900" x-text="it.product_name"></span> <span class="font-mono text-[11px] text-ink-300" x-text="it.product_code"></span></td>
+                            <td class="py-2 font-mono text-xs" x-text="it.lot_no"></td>
+                            <td class="py-2 font-mono text-xs" x-text="it.expiry_date || '—'"></td>
+                            <td class="py-2 text-right font-mono font-semibold" x-text="Number(it.qty).toLocaleString()"></td>
+                        </tr>
+                    </template>
+                </tbody>
+            </table>
+        </x-slot:items>
+        <x-slot:actions>
+            <button type="button" @click="window.open('{{ url('inbounds') }}/'+doc.id+'/labels','_blank')" class="rounded-xl border border-line px-4 py-2 text-sm font-semibold text-brand-600 hover:bg-brand-50">🏷 라벨</button>
+            @if($canDelete)
+            <template x-if="doc.status!=='CONFIRMED' && doc.status!=='CANCELED'">
+                <button @click="act('{{ url('inbounds') }}/'+doc.id,{method:'DELETE',confirm:{title:'입고 예정 삭제',message:doc.inbound_no+' 문서를 삭제할까요? (확정 전 문서만 삭제됩니다)',confirmText:'삭제',tone:'crit'}})" :disabled="saving" class="rounded-xl border border-crit-500/40 px-4 py-2 text-sm font-semibold text-crit-600 hover:bg-crit-100">삭제</button>
+            </template>
+            @endif
+        </x-slot:actions>
+    </x-list-detail>
 
     {{-- 등록 슬라이드오버 --}}
     <div x-data="asnForm()" @asn-open.window="open()" x-show="show" x-cloak class="fixed inset-0 z-[90] flex items-center justify-center p-4" @keydown.escape.window="show=false">
@@ -108,6 +140,7 @@
             function f(id){ return document.getElementById(id).value; }
             asnGrid = window.WWGrid.connect('#asn-grid', {
                 dataUrl: '{{ route('inbounds.data') }}', readonly:true, screenName:'입고예정ASN', exportInto:'#asn-actions',
+                onRowDblClick:(row)=>window.dispatchEvent(new CustomEvent('detail-open',{detail:row.id})),
                 params: () => ({ keyword:f('f-keyword'), status:f('f-status') }),
                 columns: [
                     { title:'입고번호', field:'inbound_no', width:170 },
