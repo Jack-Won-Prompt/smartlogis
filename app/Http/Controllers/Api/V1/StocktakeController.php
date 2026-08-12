@@ -218,7 +218,7 @@ class StocktakeController extends ApiController
      */
     public function scan(Request $request, int $id, Gs1Parser $parser): JsonResponse
     {
-        $stocktake = $this->editable($id);
+        $stocktake = $this->editable($request, $id);
 
         $validated = $request->validate([
             'scan' => ['required', 'string', 'max:200'],
@@ -328,7 +328,7 @@ class StocktakeController extends ApiController
     /** 수량 직접 입력·정정. counted_qty=null 이면 미입력으로 되돌린다. */
     public function updateItem(Request $request, int $id, int $itemId): JsonResponse
     {
-        $stocktake = $this->editable($id);
+        $stocktake = $this->editable($request, $id);
 
         $validated = $request->validate([
             'counted_qty' => ['present', 'nullable', 'integer', 'min:0', 'max:999999'],
@@ -363,6 +363,12 @@ class StocktakeController extends ApiController
     {
         $stocktake = $this->find($id);
 
+        abort_unless(
+            $this->owns($request, $stocktake),
+            403,
+            '다른 조직의 실사는 확정할 수 없습니다.',
+        );
+
         try {
             $service->confirm($stocktake, $request->user()->id);
         } catch (DomainException $e) {
@@ -387,8 +393,13 @@ class StocktakeController extends ApiController
         return $stocktake;
     }
 
-    /** 확정된 실사는 더 이상 손댈 수 없다. */
-    private function editable(int $id): Stocktake
+    /**
+     * 세거나 고칠 수 있는 실사인지.
+     *
+     * 라이프사이언스는 OrgLocationScope 상 전 조직 재고를 "볼" 수 있는데, 그렇다고
+     * 남의 창고 실사 수량을 대신 세도 된다는 뜻은 아니다. 확정과 같은 기준으로 막는다.
+     */
+    private function editable(Request $request, int $id): Stocktake
     {
         $stocktake = $this->find($id);
 
@@ -398,7 +409,21 @@ class StocktakeController extends ApiController
             '이미 확정된 실사입니다. 수정할 수 없습니다.',
         );
 
+        abort_unless(
+            $this->owns($request, $stocktake),
+            403,
+            '다른 조직의 실사는 수정할 수 없습니다.',
+        );
+
         return $stocktake;
+    }
+
+    /** 본사이거나 자기 조직의 실사인가. */
+    private function owns(Request $request, Stocktake $stocktake): bool
+    {
+        $user = $request->user();
+
+        return $user->role === OrgType::HQ || $stocktake->org_id === $user->org_id;
     }
 
     /**
