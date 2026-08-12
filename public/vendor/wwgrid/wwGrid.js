@@ -1407,6 +1407,11 @@ class wwGrid {
 
     if (colDef.editor === 'number') {
       value = value === '' ? '' : Number(value);
+    } else if (colDef.editor === 'combo' && Array.isArray(colDef.options)) {
+      // <select>.value 는 항상 문자열 → 옵션의 원래 타입(숫자 등) 값으로 복원.
+      // 그래야 셀 표시(라벨 해석)·변경 감지·저장이 원본 데이터 타입과 일치한다.
+      const opt = colDef.options.find(o => String(typeof o === 'object' ? o.value : o) === value);
+      if (opt) value = typeof opt === 'object' ? opt.value : opt;
     }
 
     this._calendar.close();
