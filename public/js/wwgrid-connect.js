@@ -65,9 +65,11 @@
             let page = 1, curSize = pageSize, lastPage = 1, total = 0, pagerEl = null;
 
             // 그리드가 남은 뷰포트 높이를 채우도록 계산(페이지 스크롤 대신 그리드 내부만 스크롤).
+            // 페이징 모드는 그리드 아래 페이저 높이만큼 더 비워 페이저가 항상 뷰포트에 보이게 한다.
             function fitHeight() {
                 const top = host.getBoundingClientRect().top;
-                return Math.max(300, Math.floor(global.innerHeight - top - 88));
+                const reserve = paged ? 148 : 88;
+                return Math.max(300, Math.floor(global.innerHeight - top - reserve));
             }
 
             const grid = new global.wwGrid({
@@ -79,14 +81,14 @@
                 toolbar: false, // 엑셀/추가/삭제 등은 외부 버튼으로 연동
                 footer: { total: true, selected: !readonly, modified: !readonly },
                 summary,
-                // 페이징 모드는 페이지 크기만큼만 표시하므로 뷰포트 채움을 끄고 내용 높이로 둔다.
-                height: paged ? (height || null) : (height || fitHeight()),
+                // 모든 그리드는 뷰포트를 채우는 고정 높이 + 내부 스크롤(거래처 관리 표준). 페이징도 동일.
+                height: height || fitHeight(),
                 columns: mapColumns(columns, editable),
             });
 
             // 그리드가 항상 남은 뷰포트를 꽉 채우도록 고정 높이 지정(행이 적어도 하단 공백 없음).
-            // 행이 많으면 내부 스크롤. 창 크기 변화에도 재조정. (페이징 모드는 제외)
-            if (!height && !paged) {
+            // 행이 많으면 내부 스크롤. 창 크기 변화에도 재조정. 페이징 모드도 동일 적용.
+            if (!height) {
                 const applyHeight = () => {
                     if (!grid._wrapEl) return;
                     const h = fitHeight() + 'px';
