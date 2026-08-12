@@ -16,6 +16,7 @@ use App\Enums\SettlementStatus;
 use App\Enums\SettleType;
 use App\Enums\Severity;
 use App\Enums\StocktakeStatus;
+use App\Enums\StorageType;
 use App\Enums\UsageStatus;
 use App\Enums\UserStatus;
 use App\Models\AccessLog;
@@ -111,24 +112,49 @@ class DemoDataSeeder extends Seeder
     private function topUpProducts(): void
     {
         $suppliers = $this->ids(Organization::where('org_type', OrgType::SUPPLIER)->pluck('id')->all());
+        $names = ['정형 임플란트', '수술용 봉합사', '혈관 스텐트', '중심정맥 카테터', '인공관절 부품', '척추 고정재', '골 시멘트', '수술용 메쉬', '창상 드레싱', '정형 스크류'];
+        $boxes = [1, 5, 10, 20];
+        $storages = StorageType::cases();
         $need = self::TARGET - Product::count();
         $start = Product::count() + 1;
+        // 운영은 --no-dev 라 faker(fake())가 없다 → 팩토리 대신 순수 PHP 로 생성.
         for ($i = 0; $i < max(0, $need); $i++) {
             $n = $start + $i;
-            Product::factory()->create([
+            $purchase = random_int(1_000, 500_000);
+            Product::create([
                 'product_code' => sprintf('P-D%04d', $n),
-                'gtin' => sprintf('880%011d', random_int(10000000000, 99999999999)),
+                'product_name' => $names[array_rand($names)].sprintf(' %02d형(데모)', $n),
+                'udi_di' => sprintf('%014d', $n),
+                'gtin' => sprintf('8801%010d', $n),   // 14자리·$n 으로 고유 보장
+                'edi_code' => sprintf('D%07d', $n),
+                'spec' => sprintf('MODEL-D%03d', $n),
+                'manufacturer' => '데모메디칼',
                 'supplier_id' => $suppliers[array_rand($suppliers)],
+                'unit' => 'EA',
+                'box_qty' => $boxes[array_rand($boxes)],
+                'purchase_price' => $purchase,
+                'sales_price' => (int) round($purchase * (110 + random_int(0, 40)) / 100),
+                'storage_type' => $storages[array_rand($storages)],
+                'is_sterile' => random_int(0, 9) < 7,
+                'use_lot_control' => true,
+                'use_expiry' => true,
                 'is_active' => true,
             ]);
         }
     }
 
-    /** 모든 제품이 최소 1개 Lot 을 갖도록 보장(사용분/실사 아이템의 lot_id 정합성). */
+    /** 모든 제품이 최소 1개 Lot 을 갖도록 보장(사용분/실사 아이템의 lot_id 정합성). faker 미사용. */
     private function ensureLots(): void
     {
         foreach (Product::whereDoesntHave('lots')->pluck('id') as $pid) {
-            ProductLot::factory()->count(random_int(1, 2))->create(['product_id' => $pid]);
+            $count = random_int(1, 2);
+            for ($k = 1; $k <= $count; $k++) {
+                ProductLot::create([
+                    'product_id' => (int) $pid,
+                    'lot_no' => sprintf('LOT-D%d-%02d', $pid, $k),   // (product_id, lot_no) 고유
+                    'expiry_date' => now()->addDays(random_int(30, 1095))->toDateString(),
+                ]);
+            }
         }
     }
 
