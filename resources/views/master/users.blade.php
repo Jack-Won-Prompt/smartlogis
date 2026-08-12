@@ -62,7 +62,7 @@
             const grid = window.WWGrid.connect('#user-grid', {
                 dataUrl: '{{ route('master.users.data') }}',
                 batchUrl: '{{ route('master.users.batch') }}',
-                screenName: '사용자',
+                screenName: '사용자', exportButton: false,
                 params: () => ({ keyword:f('f-keyword'), role:f('f-role'), status:f('f-status') }),
                 defaults: { login_id:'', email:'', name:'', role:'HOSPITAL', org_id:'', status:'ACTIVE' },
                 columns: [

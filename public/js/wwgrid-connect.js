@@ -58,6 +58,7 @@
                 readonly = false, defaults = {}, onRowClick, screenName = 'grid',
                 cap = 500, height = null, summary = false, buttons = {},
                 paged = false, pageSize = 30,   // paged:true → 서버 페이징(10/30/50/100)
+                exportButton = true, exportFilename = null,   // 우상단 엑셀 다운로드(현재 필터 전체 데이터)
             } = opts;
             const host = document.querySelector(selector);
             const editable = !readonly;
@@ -97,6 +98,44 @@
                 };
                 applyHeight();
                 global.addEventListener('resize', applyHeight);
+            }
+
+            // 우상단 엑셀 다운로드 — 현재 필터의 전체 데이터를 받아 내보낸다(페이징이어도 전체, 콤보는 라벨).
+            async function exportAll(btn) {
+                try {
+                    if (btn) btn.disabled = true;
+                    const qs = new URLSearchParams(Object.assign({ size: 100000, page: 1 }, cleanParams(params())));
+                    const res = await fetch(dataUrl + '?' + qs, { headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' } }).then((r) => r.json());
+                    const rows = res.data || [];
+                    if (!rows.length) { toast('내보낼 데이터가 없습니다.', 'warn'); return; }
+                    // ExcelExporter 가 참조하는 멤버만 갖춘 경량 프록시 → 전체 행을 라이브 그리드 훼손 없이 내보낸다.
+                    const proxy = {
+                        columns: grid.columns, columnGroups: grid.columnGroups,
+                        summary: grid.summary, theme: grid.theme,
+                        getData: () => rows, getCheckedRows: () => [],
+                        _formatDisplay: (v, c) => grid._formatDisplay(v, c),
+                    };
+                    const fname = (exportFilename || screenName) + '-' + new Date().toISOString().slice(0, 10).replace(/-/g, '');
+                    grid.downloadExcel.call(proxy, { filename: fname });
+                    toast(`엑셀 ${rows.length.toLocaleString()}건을 내려받았습니다.`, 'ok');
+                } catch (e) {
+                    toast('엑셀 내보내기에 실패했습니다.', 'crit');
+                } finally {
+                    if (btn) btn.disabled = false;
+                }
+            }
+
+            // 우상단 다운로드 버튼(그리드 바로 위, 오른쪽 정렬) 자동 렌더.
+            if (exportButton) {
+                const bar = document.createElement('div');
+                bar.className = 'cg-grid-toolbar mb-2 flex justify-end';
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'btn-ghost !py-2 !text-sm';
+                btn.innerHTML = '<svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg> 엑셀 다운로드';
+                bar.appendChild(btn);
+                host.parentNode.insertBefore(bar, host);
+                btn.addEventListener('click', () => exportAll(btn));
             }
 
             function load() {
@@ -175,7 +214,7 @@
                     } else if (status === 422) toast(firstErr(data), 'crit');
                     else toast(data?.message || '저장에 실패했습니다.', 'crit');
                 },
-                exportExcel() { grid.downloadExcel({ filename: screenName + '-' + new Date().toISOString().slice(0, 10).replace(/-/g, '') }); },
+                exportExcel() { return exportAll(); },
             };
 
             // 외부 버튼 연동

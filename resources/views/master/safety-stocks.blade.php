@@ -59,7 +59,7 @@
             const grid = window.WWGrid.connect('#ss-grid', {
                 dataUrl: '{{ route('master.safety-stocks.data') }}',
                 batchUrl: '{{ route('master.safety-stocks.batch') }}',
-                screenName: '안전재고',
+                screenName: '안전재고', exportButton: false,
                 params: () => ({ hospital_id:f('f-hospital'), keyword:f('f-keyword') }),
                 defaults: { hospital_id:'', product_id:'', safety_qty:0, max_qty:0, reorder_qty:0 },
                 columns: [

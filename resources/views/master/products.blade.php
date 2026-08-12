@@ -81,7 +81,7 @@
             const grid = window.WWGrid.connect('#product-grid', {
                 dataUrl: '{{ route('master.products.data') }}',
                 batchUrl: '{{ route('master.products.batch') }}',
-                screenName: '제품',
+                screenName: '제품', exportButton: false,
                 params: () => ({
                     keyword: f('f-keyword'), supplier_id: f('f-supplier'),
                     storage_type: f('f-storage'), is_active: f('f-active'),

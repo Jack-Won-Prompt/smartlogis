@@ -55,7 +55,7 @@
             const grid = window.WWGrid.connect('#org-grid', {
                 dataUrl: '{{ route('master.organizations.data') }}',
                 batchUrl: '{{ route('master.organizations.batch') }}',
-                screenName: '거래처',
+                screenName: '거래처', exportButton: false,
                 params: () => ({ keyword: f('f-keyword'), org_type: f('f-type'), is_active: f('f-active') }),
                 defaults: { org_type:'HOSPITAL', code:'', name:'', biz_reg_no:'', tel:'', is_active:true },
                 columns: [
