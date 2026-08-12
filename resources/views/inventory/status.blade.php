@@ -40,6 +40,7 @@
             const grid = window.WWGrid.connect('#stock-grid', {
                 dataUrl: '{{ route('inventory.status.data') }}',
                 readonly: true, screenName: '재고현황',
+                paged: true, pageSize: 30,
                 params: filters,
                 columns: [
                     { title:'위치', field:'org_name', width:150 },
