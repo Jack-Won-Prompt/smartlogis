@@ -15,6 +15,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
 use Illuminate\View\View;
@@ -38,7 +39,21 @@ class ChatController extends Controller
         $userId = (int) auth()->id();
         abort_unless($this->isParticipant($conversation, $userId), 403);
 
-        $conversation->load(['participants.organization', 'messages.sender', 'messages.replyTo.sender']);
+        $conversation->load(['participants.organization']);
+
+        // 초기 로딩: 최근 1주일치 + 최소 30건 보장(둘 중 더 이전 경계부터). 나머지는 위로 스크롤 시 추가.
+        $weekMinId = $conversation->messages()->where('created_at', '>=', now()->subWeek())->min('id');
+        // 최신 30건의 최소 id — 관계 기본정렬(created_at asc)을 reorder 로 지우고 id 내림차순으로 뽑는다.
+        // (집계 min() 은 limit 을 무시하므로 pluck 후 컬렉션 min 사용)
+        $latest30MinId = $conversation->messages()->reorder()->orderByDesc('id')->limit(30)->pluck('id')->min();
+        $candidates = array_filter([$weekMinId, $latest30MinId], fn ($v) => $v !== null);
+        $minId = $candidates === [] ? null : min($candidates);
+
+        $messages = $conversation->messages()->with(['sender', 'replyTo.sender'])
+            ->when($minId !== null, fn ($q) => $q->where('id', '>=', $minId))
+            ->orderBy('id')->get();
+        $conversation->setRelation('messages', $messages);
+        $hasMoreOlder = $minId !== null && $conversation->messages()->where('id', '<', $minId)->exists();
 
         $now = now();
         $conversation->participants()->updateExistingPivot($userId, ['last_read_at' => $now]);
@@ -47,6 +62,37 @@ class ChatController extends Controller
         return view('chat.index', [
             'conversations' => $this->conversationsFor($userId),
             'conversation' => $conversation,
+            'hasMoreOlder' => $hasMoreOlder,
+            'oldestId' => $minId,
+        ]);
+    }
+
+    /** 위로 스크롤 시 이전 메시지 1주일치(빈 주면 그 이전 50건)를 추가로 반환. */
+    public function olderMessages(Conversation $conversation, Request $request): JsonResponse
+    {
+        $userId = (int) auth()->id();
+        abort_unless($this->isParticipant($conversation, $userId), 403);
+
+        $beforeId = $request->integer('before_id');
+        abort_if($beforeId <= 0, 400);
+
+        $cursorTs = $conversation->messages()->whereKey($beforeId)->max('created_at');
+        $cursorDate = $cursorTs !== null ? Carbon::parse($cursorTs) : now();
+        $base = $conversation->messages()->with(['sender', 'replyTo.sender'])->where('id', '<', $beforeId);
+
+        $batch = (clone $base)->where('created_at', '>=', $cursorDate->copy()->subWeek())->reorder()->orderBy('id')->get();
+        if ($batch->isEmpty()) {
+            // 그 1주일 구간에 메시지가 없으면 빈 창 반복을 피해 그 이전(id 기준) 최근 50건을 가져온다.
+            $batch = (clone $base)->reorder()->orderByDesc('id')->limit(50)->get()->sortBy('id')->values();
+        }
+
+        $oldestId = $batch->min('id');
+        $hasMore = $oldestId !== null && $conversation->messages()->where('id', '<', $oldestId)->exists();
+
+        return response()->json([
+            'messages' => $batch->map(fn (Message $m) => $m->toChatArray())->all(),
+            'has_more' => $hasMore,
+            'oldest_id' => $oldestId,
         ]);
     }
 

@@ -75,6 +75,7 @@ Route::middleware('auth')->group(function () {
         Route::post('/chat', 'store')->name('chat.store');
         Route::post('/chat/group', 'storeGroup')->name('chat.group');
         Route::get('/chat/{conversation}', 'show')->name('chat.show');
+        Route::get('/chat/{conversation}/older', 'olderMessages')->name('chat.older');
         Route::post('/chat/{conversation}/reply', 'reply')->name('chat.reply');
         Route::post('/chat/{conversation}/invite', 'invite')->name('chat.invite');
         Route::delete('/chat/{conversation}/leave', 'leave')->name('chat.leave');

@@ -89,6 +89,7 @@ class Message extends Model
             'file_url' => $this->fileUrl(),
             'file_name' => $this->file_name,
             'is_image' => $this->isImage(),
+            'is_deleted' => $this->isDeleted(),
             'reply_to' => $this->replyTo ? [
                 'id' => $this->replyTo->id,
                 'sender_name' => $this->replyTo->sender?->name,

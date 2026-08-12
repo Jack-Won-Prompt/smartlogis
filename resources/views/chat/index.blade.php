@@ -51,6 +51,9 @@
             pusherCluster: @js($pusherCluster),
             convChannels: @js($conversations->pluck('id')),
             othersReadInit: {{ $otherReadInit ? 'true' : 'false' }},
+            hasMoreOlderInit: {{ ($hasMoreOlder ?? false) ? 'true' : 'false' }},
+            oldestIdInit: {{ $oldestId ?? 'null' }},
+            olderUrl: @js($conversation ? route('chat.older', $conversation) : ''),
          })" x-init="init()">
 
         {{-- ── 좌: 대화 목록 ─────────────────────────────── --}}
@@ -116,6 +119,9 @@
                 </header>
 
                 <div x-ref="msgList" class="min-h-0 flex-1 space-y-1 overflow-y-auto px-5 py-4">
+                    <div x-ref="olderTop">
+                        <div x-show="loadingOlder" x-cloak class="py-2 text-center text-xs text-ink-400">이전 대화를 불러오는 중…</div>
+                    </div>
                     @php $prevDay = null; @endphp
                     @foreach($conversation->messages as $m)
                         @php $day = optional($m->created_at)?->timezone('Asia/Seoul')?->format('Y-m-d'); @endphp
@@ -261,6 +267,7 @@
                 body: '', pendingFiles: [], replyTo: null,
                 othersRead: cfg.othersReadInit || false,
                 pusher: null, lightbox: null, editing: null,
+                hasMoreOlder: cfg.hasMoreOlderInit || false, oldestId: cfg.oldestIdInit || null, loadingOlder: false,
 
                 init() {
                     this.fitHeight();
@@ -268,6 +275,9 @@
                     this.scrollBottom();
                     this.setupPusher(cfg.pusherKey, cfg.pusherCluster, cfg.convChannels || []);
                     this.$watch('body', () => this.autoGrow());
+                    // 위로 스크롤 시 이전 대화(1주일치씩) 추가 로드
+                    const ml = this.$refs.msgList;
+                    if (ml) ml.addEventListener('scroll', () => { if (ml.scrollTop < 80) this.loadOlder(); });
                     // 메시지 액션(답장/수정/삭제) 이벤트 위임 — 서버 렌더 + 동적 추가 메시지 모두 동작
                     const list = this.$refs.msgList;
                     if (list) list.addEventListener('click', (e) => {
@@ -347,9 +357,9 @@
                     if (bubble) bubble.innerHTML = '<span class="text-sm italic text-ink-300">삭제된 메시지</span>';
                 },
 
-                appendMessage(d) {
+                // 메시지 DOM 요소 생성(신규/실시간/이전로드 공용). 반환된 요소를 호출측이 append/insert.
+                buildMessageEl(d) {
                     const mine = d.sender_id === this.meId;
-                    const list = this.$refs.msgList;
                     const wrap = document.createElement('div');
                     wrap.setAttribute('data-msg', d.id);
                     wrap.setAttribute('data-sender', d.sender_name || '');
@@ -358,6 +368,12 @@
                     let inner = '';
                     if (!mine) inner += '<span class="mr-2 mt-1 grid h-7 w-7 shrink-0 place-items-center self-end rounded-full bg-brand-gradient text-[10px] font-bold text-white">' + this.esc((d.sender_name||'?')[0]) + '</span>';
                     let bubble = '<div data-bubble class="relative rounded-2xl px-3 py-2 text-sm ' + (mine ? 'bg-brand-600 text-white' : 'bg-white border border-line text-ink-800') + '">';
+                    if (d.is_deleted) {
+                        bubble += '<span class="text-sm italic ' + (mine ? 'text-white/70' : 'text-ink-300') + '">삭제된 메시지</span></div>';
+                        inner += '<div class="max-w-[70%]">' + bubble + '<div class="mt-0.5 text-[10px] text-ink-300 ' + (mine?'text-right':'') + '">' + this.time(d.created_at) + '</div></div>';
+                        wrap.innerHTML = inner;
+                        return wrap;
+                    }
                     if (!mine) bubble += '<div class="mb-0.5 text-[11px] font-semibold text-brand-600">' + this.esc(d.sender_name||'') + '</div>';
                     if (d.reply_to) bubble += '<div class="mb-1 rounded bg-black/5 px-2 py-1 text-[11px] opacity-80"><b>' + this.esc(d.reply_to.sender_name||'') + '</b> ' + this.esc((d.reply_to.body||'').slice(0,60)) + '</div>';
                     if (d.file_url) {
@@ -375,7 +391,27 @@
                     bubble += '</div>';
                     inner += '<div class="max-w-[70%]">' + bubble + '<div class="mt-0.5 text-[10px] text-ink-300 ' + (mine?'text-right':'') + '">' + this.time(d.created_at) + '</div></div>';
                     wrap.innerHTML = inner;
-                    list.appendChild(wrap);
+                    return wrap;
+                },
+                appendMessage(d) {
+                    this.$refs.msgList.appendChild(this.buildMessageEl(d));
+                },
+
+                // 위로 스크롤 시 이전 메시지 1주일치(빈 주면 그 이전 50건) 추가 — 스크롤 위치 보존.
+                async loadOlder() {
+                    if (this.loadingOlder || !this.hasMoreOlder || !this.oldestId || !cfg.olderUrl) return;
+                    this.loadingOlder = true;
+                    const list = this.$refs.msgList;
+                    const prevH = list.scrollHeight, prevTop = list.scrollTop;
+                    try {
+                        const res = await fetch(cfg.olderUrl + '?before_id=' + this.oldestId, { headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' } });
+                        const d = await res.json();
+                        const anchor = this.$refs.olderTop.nextSibling;   // 지시자 바로 아래(기존 메시지 위)에 순서대로 삽입
+                        (d.messages || []).forEach((m) => { if (!document.querySelector('[data-msg="' + m.id + '"]')) list.insertBefore(this.buildMessageEl(m), anchor); });
+                        this.hasMoreOlder = !!d.has_more;
+                        if (d.oldest_id) this.oldestId = d.oldest_id;
+                        list.scrollTop = prevTop + (list.scrollHeight - prevH);   // 삽입 높이만큼 보정 → 화면 튐 방지
+                    } catch (e) { /* 무시 */ } finally { this.loadingOlder = false; }
                 },
 
                 bumpList(d) {
