@@ -2,8 +2,6 @@
 @once
     @push('head')
         <link rel="stylesheet" href="{{ asset('vendor/wwgrid/wwGrid.css') }}?v={{ filemtime(public_path('vendor/wwgrid/wwGrid.css')) }}">
-        {{-- 행이 적어 고정 높이로 채워질 때도 마지막 행 아래 구분선이 보이도록(원본은 last-child border 제거) --}}
-        <style>.cg-tbody tr:last-child { border-bottom: 1px solid var(--cg-row-border) !important; }</style>
     @endpush
     @push('scripts')
         <script src="{{ asset('vendor/wwgrid/wwGrid.js') }}?v={{ filemtime(public_path('vendor/wwgrid/wwGrid.js')) }}"></script>
