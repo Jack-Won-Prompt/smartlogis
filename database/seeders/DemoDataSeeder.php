@@ -7,18 +7,28 @@ namespace Database\Seeders;
 use App\Enums\AuditAction;
 use App\Enums\InboundDirection;
 use App\Enums\InboundStatus;
+use App\Enums\NotiType;
 use App\Enums\OrgType;
+use App\Enums\OutboundSourceType;
+use App\Enums\OutboundStatus;
+use App\Enums\ReturnStatus;
 use App\Enums\SettlementStatus;
 use App\Enums\SettleType;
+use App\Enums\Severity;
 use App\Enums\StocktakeStatus;
 use App\Enums\UsageStatus;
 use App\Enums\UserStatus;
+use App\Models\AccessLog;
 use App\Models\AuditLog;
 use App\Models\Inbound;
+use App\Models\Notification;
 use App\Models\Organization;
+use App\Models\Outbound;
 use App\Models\Product;
 use App\Models\ProductLot;
+use App\Models\SafetyStock;
 use App\Models\Settlement;
+use App\Models\StockReturn;
 use App\Models\Stocktake;
 use App\Models\UsageReport;
 use App\Models\User;
@@ -37,6 +47,13 @@ class DemoDataSeeder extends Seeder
 
     public function run(): void
     {
+        // 재실행 안전 가드 — 데모 문서(IB-D 마커)가 이미 있으면 중복 생성하지 않는다(운영 보호).
+        if (Inbound::where('inbound_no', 'like', 'IB-D%')->exists()) {
+            $this->command->warn('DemoDataSeeder: 이미 데모 데이터가 있어 건너뜁니다. (정리하려면 IB-D/OB-D/UR-D/ST-D/RT-D 마커 문서를 삭제)');
+
+            return;
+        }
+
         DB::transaction(function () {
             $this->topUpOrganizations();
             $this->topUpProducts();
@@ -60,8 +77,13 @@ class DemoDataSeeder extends Seeder
 
             $this->seedInbounds($suppliers, $warehouses, $hospitals, $userIds, $lotsByProduct, $productIds);
             $usageItems = $this->seedUsageReports($hospitals, $userIds, $lotsByProduct, $productIds, $priceOf);
+            $this->seedOutbounds($warehouses, $hospitals, $lotsByProduct, $productIds, $priceOf);
+            $this->seedReturns($hospitals, $warehouses, $userIds, $lotsByProduct, $productIds);
             $this->seedStocktakes(array_merge($warehouses, $hospitals), $userIds, $lotsByProduct, $productIds);
             $this->seedSettlements($hospitals, $suppliers, $usageItems, $supplierOfProduct);
+            $this->topUpSafetyStocks($hospitals, $productIds);
+            $this->topUpNotifications();
+            $this->topUpAccessLogs($userIds);
             $this->topUpAuditLogs($userIds);
         });
     }
@@ -223,6 +245,79 @@ class DemoDataSeeder extends Seeder
     }
 
     /**
+     * 출고 지시 — 창고→병원. 상태별로 shipped/delivered 시점을 채운다. Lot 은 같은 product 것만.
+     *
+     * @param  array<int, int>  $warehouses
+     * @param  array<int, int>  $hospitals
+     * @param  array<int, array<int, ProductLot>>  $lotsByProduct
+     * @param  array<int, int>  $productIds
+     * @param  array<int, float>  $priceOf
+     */
+    private function seedOutbounds(array $warehouses, array $hospitals, array $lotsByProduct, array $productIds, array $priceOf): void
+    {
+        $statuses = [OutboundStatus::DRAFT, OutboundStatus::APPROVED, OutboundStatus::PICKING, OutboundStatus::SHIPPED, OutboundStatus::DELIVERED, OutboundStatus::CANCELED];
+        for ($i = 1; $i <= self::TARGET; $i++) {
+            $status = $statuses[$i % count($statuses)];
+            $shipped = in_array($status, [OutboundStatus::SHIPPED, OutboundStatus::DELIVERED], true);
+            $delivered = $status === OutboundStatus::DELIVERED;
+            $ob = Outbound::create([
+                'outbound_no' => sprintf('OB-D%08d', $i),
+                'warehouse_id' => $warehouses[array_rand($warehouses)],
+                'hospital_id' => $hospitals[array_rand($hospitals)],
+                'status' => $status,
+                'source_type' => $i % 3 === 0 ? OutboundSourceType::AUTO_REPLENISH : OutboundSourceType::MANUAL,
+                'planned_date' => now()->subDays(random_int(0, 40))->toDateString(),
+                'shipped_at' => $shipped ? now()->subDays(random_int(0, 20)) : null,
+                'delivered_at' => $delivered ? now()->subDays(random_int(0, 10)) : null,
+            ]);
+            foreach ($this->pickProducts($productIds, random_int(1, 3)) as $pid) {
+                $lot = $this->randomLot($lotsByProduct, $pid);
+                $ob->items()->create([
+                    'product_id' => $pid,
+                    'lot_id' => $lot->id,
+                    'qty' => random_int(1, 50),
+                    'unit_price' => $priceOf[$pid] ?? 10000.0,
+                ]);
+            }
+        }
+    }
+
+    /**
+     * 반납 — 병원→창고(라이프/병원 등록). 상태별 shipped/received 시점 채움.
+     *
+     * @param  array<int, int>  $hospitals
+     * @param  array<int, int>  $warehouses
+     * @param  array<int, int>  $userIds
+     * @param  array<int, array<int, ProductLot>>  $lotsByProduct
+     * @param  array<int, int>  $productIds
+     */
+    private function seedReturns(array $hospitals, array $warehouses, array $userIds, array $lotsByProduct, array $productIds): void
+    {
+        $statuses = [ReturnStatus::REQUESTED, ReturnStatus::SHIPPING, ReturnStatus::RECEIVED, ReturnStatus::CANCELED];
+        for ($i = 1; $i <= self::TARGET; $i++) {
+            $status = $statuses[$i % count($statuses)];
+            $rt = StockReturn::create([
+                'return_no' => sprintf('RT-D%08d', $i),
+                'hospital_id' => $hospitals[array_rand($hospitals)],
+                'warehouse_id' => $warehouses[array_rand($warehouses)],
+                'status' => $status,
+                'reason' => '유통기한 임박 반납(데모)',
+                'shipped_at' => in_array($status, [ReturnStatus::SHIPPING, ReturnStatus::RECEIVED], true) ? now()->subDays(random_int(0, 15)) : null,
+                'received_at' => $status === ReturnStatus::RECEIVED ? now()->subDays(random_int(0, 7)) : null,
+                'created_by' => $userIds[array_rand($userIds)],
+            ]);
+            foreach ($this->pickProducts($productIds, random_int(1, 3)) as $pid) {
+                $lot = $this->randomLot($lotsByProduct, $pid);
+                $rt->items()->create([
+                    'product_id' => $pid,
+                    'lot_id' => $lot->id,
+                    'qty' => random_int(1, 30),
+                ]);
+            }
+        }
+    }
+
+    /**
      * @param  array<int, int>  $orgIds
      * @param  array<int, int>  $userIds
      * @param  array<int, array<int, ProductLot>>  $lotsByProduct
@@ -334,6 +429,103 @@ class DemoDataSeeder extends Seeder
                     $made++;
                 }
             }
+        }
+    }
+
+    /**
+     * 안전재고 — 병원×제품 고유 조합으로 50건까지 채운다(PK 중복 회피).
+     *
+     * @param  array<int, int>  $hospitals
+     * @param  array<int, int>  $productIds
+     */
+    private function topUpSafetyStocks(array $hospitals, array $productIds): void
+    {
+        $need = self::TARGET - SafetyStock::count();
+        if ($need <= 0) {
+            return;
+        }
+        $made = 0;
+        foreach ($hospitals as $hid) {
+            foreach ($productIds as $pid) {
+                if ($made >= $need) {
+                    return;
+                }
+                if (SafetyStock::where('hospital_id', $hid)->where('product_id', $pid)->exists()) {
+                    continue;
+                }
+                $safety = random_int(5, 50);
+                SafetyStock::create([
+                    'hospital_id' => $hid,
+                    'product_id' => $pid,
+                    'safety_qty' => $safety,
+                    'max_qty' => $safety * 3,
+                    'reorder_qty' => $safety * 2,
+                ]);
+                $made++;
+            }
+        }
+    }
+
+    /** 알림 센터 — 유형/심각도/대상역할을 섞어 50건까지 채운다. */
+    private function topUpNotifications(): void
+    {
+        $need = self::TARGET - Notification::count();
+        if ($need <= 0) {
+            return;
+        }
+        $types = NotiType::cases();
+        $severities = [Severity::INFO, Severity::WARNING, Severity::CRITICAL];
+        $roles = [OrgType::HQ, OrgType::WAREHOUSE, OrgType::HOSPITAL, OrgType::SUPPLIER];
+        // 중요: 이벤트 억제 — 데모 알림이 실제 FCM 푸시/이메일/브로드캐스트로 발송되지 않게 한다(운영 보호).
+        Notification::withoutEvents(function () use ($need, $types, $severities, $roles) {
+            for ($i = 0; $i < $need; $i++) {
+                $type = $types[array_rand($types)];
+                Notification::create([
+                    'noti_type' => $type,
+                    'severity' => $severities[array_rand($severities)],
+                    'target_role' => $roles[array_rand($roles)],
+                    'target_org_id' => null,
+                    'title' => $type->label().' 알림(데모)',
+                    'message' => '데모 알림 메시지 '.($i + 1),
+                    'link_url' => null,
+                    'is_read' => (bool) random_int(0, 1),
+                    'created_at' => now()->subDays(random_int(0, 30)),
+                ]);
+            }
+        });
+    }
+
+    /**
+     * 접속 로그 — 대표 라우트를 섞어 50건까지 채운다.
+     *
+     * @param  array<int, int>  $userIds
+     */
+    private function topUpAccessLogs(array $userIds): void
+    {
+        $need = self::TARGET - AccessLog::count();
+        if ($need <= 0) {
+            return;
+        }
+        $routes = [
+            ['GET', '/dashboard', 'dashboard'],
+            ['GET', '/inventory/status', 'inventory.status'],
+            ['GET', '/usages', 'usages.index'],
+            ['POST', '/usages', 'usages.store'],
+            ['GET', '/settlements', 'settlements.index'],
+            ['GET', '/outbounds', 'outbounds.index'],
+            ['GET', '/notifications', 'notifications.index'],
+        ];
+        for ($i = 0; $i < $need; $i++) {
+            $r = $routes[array_rand($routes)];
+            AccessLog::create([
+                'user_id' => $userIds[array_rand($userIds)],
+                'method' => $r[0],
+                'path' => $r[1],
+                'route' => $r[2],
+                'ip' => '127.0.0.1',
+                'user_agent' => 'DemoSeeder/1.0',
+                'created_at' => now()->subDays(random_int(0, 30)),
+            ]);
         }
     }
 
