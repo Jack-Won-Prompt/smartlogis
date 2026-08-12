@@ -23,7 +23,7 @@
         <x-hospital-filter :roles="['HQ','WAREHOUSE']" />
     </x-filter-bar>
 
-    <div class="mb-4 mt-4 flex items-center justify-end" x-data>
+    <div id="ob-actions" class="mb-4 mt-4 flex items-center justify-end gap-2" x-data>
         <button @click="$dispatch('ob-open')" class="btn-primary !py-2 !text-sm" data-magnetic>
             <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg> 출고 지시
         </button>
@@ -95,7 +95,7 @@
             const tones = { DRAFT:'hold', APPROVED:'ok', PICKING:'info', SHIPPED:'info', DELIVERED:'ok', CANCELED:'hold' };
             function f(id){ return document.getElementById(id).value; }
             obGrid = window.WWGrid.connect('#ob-grid', {
-                dataUrl: '{{ route('outbounds.data') }}', readonly:true, screenName:'출고지시',
+                dataUrl: '{{ route('outbounds.data') }}', readonly:true, screenName:'출고지시', exportInto:'#ob-actions',
                 onRowClick:(row)=>{ const map={ APPROVED:'pick', PICKING:'ship', SHIPPED:'deliver' }; const a=map[row.status]; if(a) advance(row.id, a); else if(row.status==='DELIVERED') window.open(`/outbounds/${row.id}/labels`,'_blank'); else window.toast('진행할 다음 단계가 없습니다.','info'); },
                 params: () => ({ keyword:f('f-keyword'), status:f('f-status'), hospital_id:(document.getElementById('f-hospital')||{}).value }),
                 columns: [

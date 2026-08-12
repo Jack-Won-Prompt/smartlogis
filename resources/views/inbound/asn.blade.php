@@ -22,7 +22,7 @@
         </div>
     </x-filter-bar>
 
-    <div class="mb-4 mt-4 flex items-center justify-end" x-data>
+    <div id="asn-actions" class="mb-4 mt-4 flex items-center justify-end gap-2" x-data>
         <button @click="$dispatch('asn-open')" class="btn-primary !py-2 !text-sm" data-magnetic>
             <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg> ASN 등록
         </button>
@@ -107,7 +107,7 @@
             const statusTones = { PLANNED:'hold', RECEIVING:'info', CONFIRMED:'ok', CANCELED:'hold' };
             function f(id){ return document.getElementById(id).value; }
             asnGrid = window.WWGrid.connect('#asn-grid', {
-                dataUrl: '{{ route('inbounds.data') }}', readonly:true, screenName:'입고예정ASN',
+                dataUrl: '{{ route('inbounds.data') }}', readonly:true, screenName:'입고예정ASN', exportInto:'#asn-actions',
                 params: () => ({ keyword:f('f-keyword'), status:f('f-status') }),
                 columns: [
                     { title:'입고번호', field:'inbound_no', width:170 },

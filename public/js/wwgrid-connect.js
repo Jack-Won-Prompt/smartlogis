@@ -59,6 +59,7 @@
                 cap = 500, height = null, summary = false, buttons = {},
                 paged = false, pageSize = 30,   // paged:true → 서버 페이징(10/30/50/100)
                 exportButton = true, exportFilename = null,   // 우상단 엑셀 다운로드(현재 필터 전체 데이터)
+                exportInto = null,   // 지정 시 해당 요소(기존 액션행)에 버튼을 합류시켜 한 줄로 표시
             } = opts;
             const host = document.querySelector(selector);
             const editable = !readonly;
@@ -125,17 +126,22 @@
                 }
             }
 
-            // 우상단 다운로드 버튼(그리드 바로 위, 오른쪽 정렬) 자동 렌더.
+            // 우상단 다운로드 버튼. exportInto 가 있으면 기존 액션행에 합류(한 줄), 없으면 그리드 위 자체 툴바.
             if (exportButton) {
-                const bar = document.createElement('div');
-                bar.className = 'cg-grid-toolbar mb-2 flex justify-end';
                 const btn = document.createElement('button');
                 btn.type = 'button';
                 btn.className = 'btn-ghost !py-2 !text-sm';
                 btn.innerHTML = '<svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg> 엑셀 다운로드';
-                bar.appendChild(btn);
-                host.parentNode.insertBefore(bar, host);
                 btn.addEventListener('click', () => exportAll(btn));
+                const target = exportInto ? document.querySelector(exportInto) : null;
+                if (target) {
+                    target.insertBefore(btn, target.firstChild);   // 액션행 왼쪽에 합류(주 버튼은 오른쪽 유지)
+                } else {
+                    const bar = document.createElement('div');
+                    bar.className = 'cg-grid-toolbar mb-2 mt-4 flex justify-end';   // 필터와 붙지 않게 상단 여백
+                    bar.appendChild(btn);
+                    host.parentNode.insertBefore(bar, host);
+                }
             }
 
             function load() {
