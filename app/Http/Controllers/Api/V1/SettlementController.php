@@ -24,7 +24,10 @@ class SettlementController extends ApiController
             ->with('organization:id,name')
             ->when($request->string('year_month')->toString(), fn ($q, $v) => $q->where('year_month', $v))
             ->when($request->string('settle_type')->toString(), fn ($q, $v) => $q->where('settle_type', $v))
-            ->when($request->string('status')->toString(), fn ($q, $v) => $q->where('status', $v));
+            ->when($request->string('status')->toString(), fn ($q, $v) => $q->where('status', $v))
+            // 병원 필터. 정산의 상대는 org_id 한 컬럼(병원=매출, 공급사=매입)이므로 여기로 매핑한다.
+            // 아래 역할 스코프가 뒤이어 걸리므로 남의 병원을 지정해도 결과는 비게 된다.
+            ->when($request->integer('hospital_id'), fn ($q, $v) => $q->where('org_id', $v));
 
         if ($user->role === OrgType::HOSPITAL) {
             $query->where('org_id', $user->org_id)->where('settle_type', SettleType::SALES->value);

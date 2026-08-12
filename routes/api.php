@@ -13,6 +13,7 @@ use App\Http\Controllers\Api\V1\OutboundController;
 use App\Http\Controllers\Api\V1\ReturnController;
 use App\Http\Controllers\Api\V1\ScanController;
 use App\Http\Controllers\Api\V1\SettlementController;
+use App\Http\Controllers\Api\V1\StocktakeController;
 use App\Http\Controllers\Api\V1\SupplierController;
 use App\Http\Controllers\Api\V1\UsageController;
 use Illuminate\Support\Facades\Route;
@@ -63,6 +64,22 @@ Route::middleware('api.token')->group(function () {
         Route::get('/expiry', [InventoryController::class, 'expiry']);
         Route::get('/shortages', [InventoryController::class, 'shortages']);
         Route::get('/lots/{lotId}/trace', [InventoryController::class, 'trace'])->whereNumber('lotId');
+    });
+
+    // ---------------------------------------------------------------- 재고 실사
+    // 선반 앞에서 하는 일이라 모바일이 본진이다. 확정은 재고를 실제로 조정한다.
+    // 공급사는 재고 위치를 갖지 않으므로 제외한다.
+    Route::middleware('role:HQ,WAREHOUSE,HOSPITAL,LIFE')->prefix('stocktakes')->group(function () {
+        Route::get('/', [StocktakeController::class, 'index']);
+        Route::get('/targets', [StocktakeController::class, 'targets']);
+        Route::post('/', [StocktakeController::class, 'store']);
+
+        Route::get('/{id}', [StocktakeController::class, 'show'])->whereNumber('id');
+        Route::get('/{id}/items', [StocktakeController::class, 'items'])->whereNumber('id');
+        Route::post('/{id}/scan', [StocktakeController::class, 'scan'])->whereNumber('id');
+        Route::patch('/{id}/items/{itemId}', [StocktakeController::class, 'updateItem'])
+            ->whereNumber(['id', 'itemId']);
+        Route::post('/{id}/confirm', [StocktakeController::class, 'confirm'])->whereNumber('id');
     });
 
     // ---------------------------------------------------------------- 입고

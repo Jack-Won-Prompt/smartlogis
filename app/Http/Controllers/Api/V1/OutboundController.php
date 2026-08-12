@@ -33,6 +33,8 @@ class OutboundController extends ApiController
             ->withCount('items')
             ->when($request->string('status')->toString(), fn ($q, $v) => $q->where('status', $v))
             ->when($request->string('source_type')->toString(), fn ($q, $v) => $q->where('source_type', $v))
+            // 병원 필터 — 웹의 x-hospital-filter 와 같은 축. 병원 계정은 이미 스코프되어 있어 무해하다.
+            ->when($request->integer('hospital_id'), fn ($q, $v) => $q->where('hospital_id', $v))
             ->when($request->string('keyword')->toString(), fn ($q, $v) => $q->where('outbound_no', 'like', "%{$v}%"))
             ->when($request->boolean('open'), fn ($q) => $q->whereNotIn('status', [
                 OutboundStatus::DELIVERED->value, OutboundStatus::CANCELED->value,

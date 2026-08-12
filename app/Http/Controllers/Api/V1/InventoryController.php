@@ -251,6 +251,8 @@ class InventoryController extends ApiController
         }
 
         $rows = $q
+            // 병원 필터 — 본사·공급사가 특정 병원의 미달만 볼 때.
+            ->when($request->integer('hospital_id'), fn ($qq, $v) => $qq->where('s.hospital_id', $v))
             ->when($request->string('keyword')->toString(), fn ($qq, $kw) => $qq->where(fn ($s) => $s
                 ->where('p.product_name', 'like', "%{$kw}%")->orWhere('h.name', 'like', "%{$kw}%")))
             ->groupBy('s.hospital_id', 'h.name', 's.product_id', 'p.product_code', 'p.product_name', 'p.unit', 's.safety_qty', 's.reorder_qty')

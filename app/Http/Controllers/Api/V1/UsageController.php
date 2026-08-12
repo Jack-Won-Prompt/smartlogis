@@ -31,6 +31,8 @@ class UsageController extends ApiController
             ->withCount('items')
             ->when($request->string('status')->toString(), fn ($q, $v) => $q->where('status', $v))
             ->when($request->boolean('pending'), fn ($q) => $q->where('status', UsageStatus::SUBMITTED->value))
+            // 병원 필터 — 본사가 승인 대기를 병원별로 추릴 때 쓴다.
+            ->when($request->integer('hospital_id'), fn ($q, $v) => $q->where('hospital_id', $v))
             ->when($request->string('keyword')->toString(), fn ($q, $v) => $q->where('report_no', 'like', "%{$v}%"))
             ->when($request->date('date_from'), fn ($q, $v) => $q->whereDate('usage_date', '>=', $v))
             ->when($request->date('date_to'), fn ($q, $v) => $q->whereDate('usage_date', '<=', $v))
