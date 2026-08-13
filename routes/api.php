@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Http\Controllers\Api\V1\AppVersionController;
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\CatalogController;
+use App\Http\Controllers\Api\V1\ChatController;
 use App\Http\Controllers\Api\V1\DashboardController;
 use App\Http\Controllers\Api\V1\InboundController;
 use App\Http\Controllers\Api\V1\InventoryController;
@@ -51,6 +52,20 @@ Route::middleware('api.token')->group(function () {
 
     Route::get('/catalog/products', [CatalogController::class, 'products']);
     Route::get('/catalog/organizations', [CatalogController::class, 'organizations']);
+
+    // 메세지(채팅) — 역할 제한 없음. 웹과 같은 대화방을 그대로 쓴다.
+    Route::prefix('chat')->group(function () {
+        Route::get('/conversations', [ChatController::class, 'conversations']);
+        Route::post('/conversations', [ChatController::class, 'startDirect']);
+        Route::get('/unread-count', [ChatController::class, 'unreadCount']);
+        Route::get('/users', [ChatController::class, 'users']);
+
+        Route::get('/conversations/{id}/messages', [ChatController::class, 'messages'])->whereNumber('id');
+        Route::post('/conversations/{id}/messages', [ChatController::class, 'send'])->whereNumber('id');
+        Route::post('/conversations/{id}/read', [ChatController::class, 'read'])->whereNumber('id');
+
+        Route::delete('/messages/{id}', [ChatController::class, 'destroyMessage'])->whereNumber('id');
+    });
 
     Route::get('/notifications', [NotificationController::class, 'index']);
     Route::get('/notifications/unread-count', [NotificationController::class, 'unreadCount']);
