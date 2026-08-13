@@ -116,23 +116,61 @@ class ChatController extends ApiController
         ]);
     }
 
-    /** 메시지 전송. */
+    /**
+     * 메시지 전송 — 텍스트 또는 이미지(멀티파트 `file`).
+     *
+     * 앱은 사진 한 장을 한 메시지로 보낸다(여러 장이면 앱이 순서대로 여러 번 호출한다).
+     * 웹처럼 한 요청에 여러 파일을 묶지 않는 이유는, 현장 회선에서 한 장이 실패해도
+     * 나머지는 올라가야 하고 어느 장이 실패했는지 사용자가 알아야 하기 때문이다.
+     */
     public function send(Request $request, int $id): JsonResponse
     {
         $conversation = $this->participating($request, $id);
         $userId = (int) $request->user()->id;
 
         $validated = $request->validate([
-            'body' => ['required', 'string', 'max:2000'],
+            // 사진만 보내는 경우가 있어 본문은 선택이다. 대신 아래에서 둘 다 비면 막는다.
+            'body' => ['nullable', 'string', 'max:2000'],
+            'file' => ['nullable', 'file', 'max:20480', 'mimes:jpg,jpeg,png,gif,webp'],
             'reply_to_id' => ['nullable', 'integer', 'exists:messages,id'],
-        ], [], ['body' => '내용']);
+        ], [
+            // 번역 파일이 없어 기본 문구가 "validation.mimes" 로 새어 나간다.
+            // 앱은 서버 message 를 그대로 보여 주므로 여기서 사람 말로 적는다.
+            'file.mimes' => '이미지 파일만 보낼 수 있습니다 (jpg · png · gif · webp).',
+            'file.max' => '이미지가 너무 큽니다 (최대 20MB).',
+            'body.max' => '메시지가 너무 깁니다 (최대 2000자).',
+        ], ['body' => '내용', 'file' => '이미지']);
 
-        $message = Message::create([
+        $file = $request->file('file');
+        $body = trim((string) ($validated['body'] ?? ''));
+
+        if ($body === '' && $file === null) {
+            return response()->json(['message' => '보낼 내용이 없습니다.'], 422);
+        }
+
+        $data = [
             'conversation_id' => $conversation->id,
             'sender_id' => $userId,
-            'body' => $validated['body'],
+            'body' => $body,
             'reply_to_id' => $validated['reply_to_id'] ?? null,
-        ]);
+        ];
+
+        if ($file !== null) {
+            $path = $file->store('messages', 'public');
+
+            // 저장 실패를 조용히 삼키지 않는다 — file_path 가 비면 앱에 빈 말풍선만 남는다.
+            if (! is_string($path) || $path === '') {
+                return response()->json([
+                    'message' => '이미지를 저장하지 못했습니다. 관리자에게 문의하세요.',
+                ], 500);
+            }
+
+            $data['file_path'] = $path;
+            $data['file_name'] = $file->getClientOriginalName();
+            $data['file_size'] = $file->getSize();
+        }
+
+        $message = Message::create($data);
 
         // 웹 화면이 열려 있으면 실시간으로 뜨도록 같은 이벤트를 쏜다.
         $this->safeBroadcast(fn () => broadcast(new MessageSent($message)));
