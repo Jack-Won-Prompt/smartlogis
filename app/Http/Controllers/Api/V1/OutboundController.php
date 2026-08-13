@@ -7,6 +7,7 @@ namespace App\Http\Controllers\Api\V1;
 use App\Enums\OrgType;
 use App\Enums\OutboundSourceType;
 use App\Enums\OutboundStatus;
+use App\Exceptions\DomainException;
 use App\Models\Outbound;
 use App\Models\Product;
 use App\Services\DocumentNoService;
@@ -179,23 +180,60 @@ class OutboundController extends ApiController
         ], 201);
     }
 
-    /** FEFO 피킹 — 유통기한 임박 Lot 부터 자동 배정하고 창고 재고를 차감한다. */
+    /**
+     * FEFO 피킹 — 유통기한 임박 Lot 부터 자동 배정하고 창고 재고를 차감한다.
+     *
+     * `item_ids` 를 주면 그 품목만 피킹한다(부분 피킹). 창고에 물건이 일부만 있을 때
+     * 있는 것부터 처리하고 나머지는 나중에 이어서 하기 위한 것이다. 웹과 같은 규칙이며
+     * 미배정 품목이 하나라도 남아 있으면 배송은 막힌다.
+     */
     public function pick(Request $request, int $id, OutboundService $service): JsonResponse
     {
         $outbound = $this->findForWarehouse($request, $id);
 
-        $service->pick($outbound, $request->user()->id);
+        $validated = $request->validate([
+            'item_ids' => ['nullable', 'array'],
+            'item_ids.*' => ['integer'],
+        ], [], ['item_ids' => '피킹 품목']);
 
-        return $this->ok("{$outbound->outbound_no} 피킹 완료 — FEFO 로 Lot 이 배정되었습니다.");
+        $itemIds = $validated['item_ids'] ?? null;
+
+        try {
+            $service->pick(
+                $outbound,
+                $request->user()->id,
+                ($itemIds !== null && $itemIds !== []) ? $itemIds : null,
+            );
+        } catch (DomainException $e) {
+            return response()->json(['message' => $e->getMessage()], 422);
+        }
+
+        $remaining = $this->unallocated($outbound);
+
+        return $this->ok(
+            $remaining > 0
+                ? "{$outbound->outbound_no} 선택 품목 피킹 완료 — 미피킹 {$remaining}건 남았습니다."
+                : "{$outbound->outbound_no} 피킹 완료 — FEFO 로 Lot 이 배정되었습니다.",
+        );
     }
 
     public function ship(Request $request, int $id, OutboundService $service): JsonResponse
     {
         $outbound = $this->findForWarehouse($request, $id);
 
-        $service->ship($outbound);
+        try {
+            $service->ship($outbound);
+        } catch (DomainException $e) {
+            return response()->json(['message' => $e->getMessage()], 422);
+        }
 
         return $this->ok("{$outbound->outbound_no} 배송을 시작했습니다.");
+    }
+
+    /** 아직 Lot 이 배정되지 않은 명세 수. */
+    private function unallocated(Outbound $outbound): int
+    {
+        return $outbound->items()->whereNull('lot_id')->count();
     }
 
     /** 배송 완료 → 병원 입고 문서 자동 생성·확정(병원 재고 증가). */
@@ -259,15 +297,28 @@ class OutboundController extends ApiController
      *
      * @return array<int, array{key: string, label: string}>
      */
+    /**
+     * 이 사용자가 지금 할 수 있는 동작.
+     *
+     * PICKING 이라도 미배정 품목이 남아 있으면 배송을 내주지 않는다. 서버가 배송을
+     * 거부하는데 버튼만 보이면(부분 피킹이 생긴 뒤로 실제로 그랬다) 앱에서 빠져나갈
+     * 길이 없다. 남은 건수를 라벨에 박아 "무엇이 남았는지"까지 알린다.
+     */
     private function actions(Outbound $outbound, bool $isWarehouseSide): array
     {
+        if (! $isWarehouseSide) {
+            return $outbound->status === OutboundStatus::SHIPPED
+                ? [['key' => 'deliver', 'label' => '배송 완료(입고 확정)']]
+                : [];
+        }
+
         return match ($outbound->status) {
-            OutboundStatus::DRAFT, OutboundStatus::APPROVED => $isWarehouseSide
-                ? [['key' => 'pick', 'label' => 'FEFO 피킹']]
-                : [],
-            OutboundStatus::PICKING => $isWarehouseSide
-                ? [['key' => 'ship', 'label' => '배송 시작']]
-                : [],
+            OutboundStatus::DRAFT, OutboundStatus::APPROVED => [
+                ['key' => 'pick', 'label' => 'FEFO 피킹'],
+            ],
+            OutboundStatus::PICKING => ($remaining = $this->unallocated($outbound)) > 0
+                ? [['key' => 'pick', 'label' => "나머지 피킹 ({$remaining}건)"]]
+                : [['key' => 'ship', 'label' => '배송 시작']],
             OutboundStatus::SHIPPED => [['key' => 'deliver', 'label' => '배송 완료(입고 확정)']],
             default => [],
         };
