@@ -8,6 +8,7 @@ use App\Models\Inbound;
 use App\Models\Outbound;
 use App\Models\StockReturn;
 use App\Services\LabelService;
+use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 /**
@@ -54,12 +55,49 @@ class LabelController extends Controller
         ]);
     }
 
-    /** 병원 출고지시서 — 출고번호 QR + 품목 명세. */
+    /** 병원 출고지시서(단건) — 출고번호 QR + 품목 명세. */
     public function outboundOrder(Outbound $outbound, LabelService $svc): View
+    {
+        return view('documents.order-sheet', [
+            'barTitle' => "출고지시서 — {$outbound->outbound_no}",
+            'sheets' => [$this->outboundSheet($outbound, $svc)],
+        ]);
+    }
+
+    /** 병원 출고지시서(다건) — 선택한 출고번호 각각을 한 장씩 출력. */
+    public function outboundOrders(Request $request, LabelService $svc): View
+    {
+        $ids = collect(explode(',', $request->string('ids')->toString()))
+            ->map(fn ($v) => (int) trim($v))->filter()->unique()->values();
+
+        $outbounds = Outbound::whereIn('id', $ids)->orderBy('id')->get();   // 스코프 적용됨
+        $sheets = $outbounds->map(fn (Outbound $o) => $this->outboundSheet($o, $svc))->all();
+
+        return view('documents.order-sheet', [
+            'barTitle' => '출고지시서 — '.count($sheets).'건',
+            'sheets' => $sheets,
+        ]);
+    }
+
+    /** 반품 출고지시서(단건) — 반품번호 QR + 품목 명세(병원 → 창고). */
+    public function returnOrder(StockReturn $return, LabelService $svc): View
+    {
+        return view('documents.order-sheet', [
+            'barTitle' => "반품 출고지시서 — {$return->return_no}",
+            'sheets' => [$this->returnSheet($return, $svc)],
+        ]);
+    }
+
+    /**
+     * 출고지시서 1장 데이터.
+     *
+     * @return array<string, mixed>
+     */
+    private function outboundSheet(Outbound $outbound, LabelService $svc): array
     {
         $outbound->load(['warehouse', 'hospital', 'items.product', 'items.lot']);
 
-        return view('documents.order-sheet', [
+        return [
             'title' => '출고지시서',
             'docNo' => $outbound->outbound_no,
             'qr' => $svc->qrDataUri($outbound->outbound_no, 160),
@@ -81,15 +119,19 @@ class LabelController extends Controller
             ])->all(),
             'signLeft' => '창고 담당',
             'signRight' => '병원 인수',
-        ]);
+        ];
     }
 
-    /** 반품 출고지시서 — 반품번호 QR + 품목 명세(병원 → 창고). */
-    public function returnOrder(StockReturn $return, LabelService $svc): View
+    /**
+     * 반품 출고지시서 1장 데이터.
+     *
+     * @return array<string, mixed>
+     */
+    private function returnSheet(StockReturn $return, LabelService $svc): array
     {
         $return->load(['hospital', 'warehouse', 'items.product', 'items.lot']);
 
-        return view('documents.order-sheet', [
+        return [
             'title' => '반품 출고지시서',
             'docNo' => $return->return_no,
             'qr' => $svc->qrDataUri($return->return_no, 160),
@@ -111,6 +153,6 @@ class LabelController extends Controller
             ])->all(),
             'signLeft' => '병원 담당',
             'signRight' => '창고 인수',
-        ]);
+        ];
     }
 }

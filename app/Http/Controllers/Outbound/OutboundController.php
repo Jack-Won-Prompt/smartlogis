@@ -24,7 +24,7 @@ class OutboundController extends Controller
 {
     public function data(Request $request): JsonResponse
     {
-        $query = Outbound::query()->with(['warehouse', 'hospital'])->withCount('items')
+        $query = Outbound::query()->with(['warehouse', 'hospital', 'deliveryProof.photos'])->withCount('items')
             ->when($request->string('status')->toString(), fn ($q, $v) => $q->where('status', $v))
             ->when($request->string('keyword')->toString(), fn ($q, $v) => $q->where('outbound_no', 'like', "%{$v}%"))
             ->when($request->integer('hospital_id'), fn ($q, $v) => $q->where('hospital_id', $v))
@@ -49,6 +49,14 @@ class OutboundController extends Controller
                 'status_label' => $o->status->label(),
                 'planned_date' => $o->planned_date?->toDateString(),
                 'items_count' => $o->items_count,
+                // 모바일 배송 처리에서 올라온 현장 증빙. 리스트에서 바로 확인한다.
+                'delivered' => $o->status === OutboundStatus::DELIVERED,
+                'delivered_at' => $o->delivered_at?->timezone('Asia/Seoul')?->format('Y-m-d H:i'),
+                'signer_name' => $o->deliveryProof?->signer_name,
+                'signature_url' => $o->deliveryProof?->signatureUrl(),
+                'photos' => ($o->deliveryProof?->photos ?? collect())
+                    ->map(fn ($ph) => ['id' => $ph->id, 'url' => $ph->url(), 'name' => $ph->file_name])
+                    ->values()->all(),
             ])->all(),
         ]);
     }
@@ -139,6 +147,28 @@ class OutboundController extends Controller
         $service->deliver($outbound, $inboundService, $request->user()?->id);
 
         return response()->json(['message' => "{$outbound->outbound_no} 배송 완료 — 병원 재고에 반영되었습니다."]);
+    }
+
+    /** 목록에서 상태값 인라인 변경 저장(수동 보정). 재고 로직 없이 상태 컬럼만 갱신. */
+    public function batch(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'updated' => ['array'],
+            'updated.*.id' => ['required', 'integer'],
+            'updated.*.status' => ['required', Rule::in(array_column(OutboundStatus::cases(), 'value'))],
+        ]);
+
+        $n = 0;
+        foreach ($data['updated'] ?? [] as $row) {
+            $ob = Outbound::find((int) $row['id']);
+            if ($ob === null) {
+                continue;
+            }
+            $ob->update(['status' => $row['status']]);
+            $n++;
+        }
+
+        return response()->json(['updated' => $n, 'message' => "{$n}건 상태를 저장했습니다."]);
     }
 
     public function index(Request $request): View

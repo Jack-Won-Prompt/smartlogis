@@ -35,6 +35,12 @@
             <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg> 출고 지시
         </button>
         @endif
+        @if($mode === 'picking')
+        <button id="btn-ob-print" type="button" class="btn-ghost !py-2 !text-sm">📄 출고지시서 출력</button>
+        <button id="btn-ob-save" type="button" class="btn-amber inline-flex items-center gap-1.5 rounded-lg px-4 py-2 text-sm font-semibold shadow-sm">
+            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg> 상태 변경 저장
+        </button>
+        @endif
     </div>
 
     <x-ww-grid-assets />
@@ -158,13 +164,142 @@
     </div>
     @endif
 
+    {{-- 배송 증빙 팝오버 — 사진/서명을 원본 크기로 확인한다. --}}
+    <div id="proof-viewer" style="display:none;position:fixed;inset:0;z-index:80;
+         background:rgba(8,15,22,.78);align-items:center;justify-content:center;padding:24px;"
+         onclick="if(event.target===this) closeProof()">
+        <div style="max-width:min(920px,92vw);max-height:88vh;display:flex;flex-direction:column;
+                    background:#fff;border-radius:14px;overflow:hidden;box-shadow:0 24px 60px rgba(0,0,0,.4);">
+            <div style="display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid #DDE4EA;">
+                <strong data-proof-title style="font-size:13.5px;color:#101B26;flex:1;"></strong>
+                <button type="button" data-proof-nav onclick="stepProof(-1)"
+                        style="border:1px solid #DDE4EA;background:#fff;border-radius:8px;padding:4px 10px;cursor:pointer;">‹</button>
+                <button type="button" data-proof-nav onclick="stepProof(1)"
+                        style="border:1px solid #DDE4EA;background:#fff;border-radius:8px;padding:4px 10px;cursor:pointer;">›</button>
+                <button type="button" onclick="closeProof()"
+                        style="border:1px solid #DDE4EA;background:#fff;border-radius:8px;padding:4px 10px;cursor:pointer;">닫기</button>
+            </div>
+            <div style="background:#0D1620;display:flex;align-items:center;justify-content:center;overflow:auto;">
+                <img data-proof-img alt="배송 증빙" style="max-width:100%;max-height:76vh;display:block;">
+            </div>
+        </div>
+    </div>
+
     @push('scripts')
     <script>
         const CSRF = () => document.querySelector('meta[name=csrf-token]').content;
+        /* ── 배송 증빙 셀 렌더러 + 팝오버 ────────────────────────────────
+           그리드 셀은 원래 글자만 담는다. 증빙은 "있다/없다"만으로는 쓸모가 없어
+           (사진이 흐릿하면 다시 받아야 한다) 셀에서 바로 열어 보게 한다.
+           renderer 는 노드만 돌려주므로 데이터가 태그를 물고 있어도 그려지지 않는다. */
+        function proofChip(text, tone){
+            const el = document.createElement('span');
+            el.textContent = text;
+            const c = { ok:'#1E8A5B', hold:'#94A5B3' }[tone] || '#5E7080';
+            el.style.cssText = `font-size:11.5px;font-weight:600;color:${c};`;
+            return el;
+        }
+
+        function proofDelivered(row){
+            if(!row || !row.delivered) return proofChip('—','hold');
+            const wrap = document.createElement('span');
+            wrap.style.cssText = 'display:inline-flex;align-items:center;gap:4px;';
+            wrap.appendChild(proofChip('✓ 완료','ok'));
+            if(row.delivered_at){
+                const t = document.createElement('span');
+                t.textContent = row.delivered_at.slice(5);   // MM-DD HH:MM
+                t.style.cssText = 'font-size:10.5px;color:#94A5B3;';
+                wrap.appendChild(t);
+            }
+            return wrap;
+        }
+
+        function thumbButton(url, title, onClick){
+            const b = document.createElement('button');
+            b.type = 'button';
+            b.title = title;
+            b.style.cssText = 'width:22px;height:22px;border-radius:4px;overflow:hidden;'
+                + 'border:1px solid #DDE4EA;padding:0;cursor:zoom-in;background:#fff;flex-shrink:0;';
+            const img = document.createElement('img');
+            img.src = url; img.alt = title; img.loading = 'lazy';
+            img.style.cssText = 'width:100%;height:100%;object-fit:cover;display:block;';
+            b.appendChild(img);
+            b.addEventListener('click', (e) => { e.stopPropagation(); onClick(); });
+            return b;
+        }
+
+        function proofPhotos(row){
+            const list = (row && row.photos) || [];
+            if(!list.length) return proofChip('—','hold');
+
+            const wrap = document.createElement('span');
+            wrap.style.cssText = 'display:inline-flex;align-items:center;gap:3px;';
+            // 각 사진을 눌러 그 사진을 연다(요청 사양).
+            list.slice(0,4).forEach((ph,i) => wrap.appendChild(
+                thumbButton(ph.url, `배송 사진 ${i+1}`, () => openProof(list, i, row))
+            ));
+            if(list.length > 4){
+                const more = proofChip(`+${list.length-4}`,'');
+                more.style.cursor = 'zoom-in';
+                more.addEventListener('click',(e)=>{ e.stopPropagation(); openProof(list, 4, row); });
+                wrap.appendChild(more);
+            }
+            return wrap;
+        }
+
+        function proofSignature(row){
+            if(!row || !row.signature_url) return proofChip('—','hold');
+            const wrap = document.createElement('span');
+            wrap.style.cssText = 'display:inline-flex;align-items:center;gap:5px;';
+            wrap.appendChild(thumbButton(row.signature_url, '인수 서명',
+                () => openProof([{url:row.signature_url, name:'인수 서명'}], 0, row, true)));
+            if(row.signer_name) wrap.appendChild(proofChip(row.signer_name,'ok'));
+            return wrap;
+        }
+
+        /* 팝오버 — 여러 장이면 좌우로 넘긴다. */
+        let proofState = { list:[], index:0 };
+
+        function openProof(list, index, row, isSignature){
+            proofState = { list, index };
+            const ov = document.getElementById('proof-viewer');
+            ov.dataset.title = (isSignature ? '인수 서명' : '배송 사진')
+                + (row && row.outbound_no ? ' · ' + row.outbound_no : '')
+                + (isSignature && row && row.signer_name ? ' · ' + row.signer_name : '');
+            renderProof();
+            ov.style.display = 'flex';
+        }
+
+        function renderProof(){
+            const ov = document.getElementById('proof-viewer');
+            const { list, index } = proofState;
+            ov.querySelector('[data-proof-title]').textContent =
+                ov.dataset.title + (list.length > 1 ? `  (${index+1}/${list.length})` : '');
+            ov.querySelector('[data-proof-img]').src = list[index].url;
+            ov.querySelectorAll('[data-proof-nav]').forEach(b => b.style.display = list.length > 1 ? '' : 'none');
+        }
+
+        function closeProof(){ document.getElementById('proof-viewer').style.display = 'none'; }
+
+        function stepProof(d){
+            const n = proofState.list.length;
+            proofState.index = (proofState.index + d + n) % n;
+            renderProof();
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if(document.getElementById('proof-viewer')?.style.display !== 'flex') return;
+            if(e.key === 'Escape') closeProof();
+            if(e.key === 'ArrowRight') stepProof(1);
+            if(e.key === 'ArrowLeft') stepProof(-1);
+        });
+
         window.addEventListener('DOMContentLoaded', () => {
             function f(id){ return document.getElementById(id).value; }
+            const isPicking = @json($mode === 'picking');
             const grid = window.WWGrid.connect('#ob-grid', {
-                dataUrl: '{{ route('outbounds.data') }}', readonly:true, screenName:'{{ $cfg['title'] }}', exportInto:'#ob-actions',
+                dataUrl: '{{ route('outbounds.data') }}', readonly: !isPicking, screenName:'{{ $cfg['title'] }}', exportInto:'#ob-actions',
+                @if($mode === 'picking') batchUrl: '{{ route('outbounds.batch') }}', buttons:{ save:'btn-ob-save' }, @endif
                 onRowDblClick:(row)=>window.dispatchEvent(new CustomEvent('detail-open',{detail:row.id})),
                 params: () => ({ keyword:f('f-keyword'), status:f('f-status'), hospital_id:(document.getElementById('f-hospital')||{}).value, mode:'{{ $mode }}' }),
                 columns: [
@@ -172,14 +307,30 @@
                     { title:'창고', field:'warehouse_name', width:140 },
                     { title:'병원', field:'hospital_name', width:140 },
                     { title:'구분', field:'source_label', width:90 },
-                    { title:'품목', field:'items_count', editor:'number', width:80 },
+                    { title:'품목', field:'items_count', width:80 },
+                    @if($mode === 'picking')
+                    { title:'상태', field:'status', editor:'list', values:@json($statuses), width:130 },
+                    @else
                     { title:'상태', field:'status_label', width:100 },
+                    @endif
+                    // 모바일 배송 처리에서 올라온 현장 증빙 — 셀에서 바로 확인한다.
+                    { title:'배송', field:'delivered', width:132, renderer:(v,row)=>proofDelivered(row) },
+                    { title:'사진', field:'photos', width:130, renderer:(v,row)=>proofPhotos(row) },
+                    { title:'서명', field:'signature_url', width:110, renderer:(v,row)=>proofSignature(row) },
                 ],
             });
             let t;
             document.getElementById('f-keyword').addEventListener('input',()=>{clearTimeout(t);t=setTimeout(()=>grid.refresh(),350);});
             document.getElementById('f-status').addEventListener('change',()=>grid.refresh());
             document.getElementById('f-hospital')?.addEventListener('change',()=>grid.refresh());
+
+            // 피킹: 체크한 출고를 각각 출고지시서로 출력
+            document.getElementById('btn-ob-print')?.addEventListener('click', () => {
+                const checked = grid.grid.getCheckedRows();
+                if(!checked.length){ window.toast('출력할 출고를 선택하세요.','warn'); return; }
+                const ids = checked.map(r=>r.id).join(',');
+                window.open('{{ route('outbounds.orders') }}?ids='+ids, '_blank');
+            });
         });
 
         @if($mode === 'order')
