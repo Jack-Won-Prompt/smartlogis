@@ -83,6 +83,7 @@
             @endif
         </x-slot:items>
         <x-slot:actions>
+            <button type="button" @click="window.open('{{ url('outbounds') }}/'+doc.id+'/order','_blank')" class="rounded-xl border border-line px-4 py-2 text-sm font-semibold text-ink-700 hover:bg-surface-2">📄 출고지시서</button>
             <button type="button" @click="window.open('{{ url('outbounds') }}/'+doc.id+'/labels','_blank')" class="rounded-xl border border-line px-4 py-2 text-sm font-semibold text-brand-600 hover:bg-brand-50">🏷 라벨</button>
             @if($mode === 'picking')
                 <template x-if="(doc.items||[]).some(it=>!it.lot_assigned)">

@@ -6,6 +6,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Inbound;
 use App\Models\Outbound;
+use App\Models\StockReturn;
 use App\Services\LabelService;
 use Illuminate\View\View;
 
@@ -50,6 +51,66 @@ class LabelController extends Controller
         return view('labels.print', [
             'title' => "입고 {$inbound->inbound_no} 라벨",
             'labels' => $labels,
+        ]);
+    }
+
+    /** 병원 출고지시서 — 출고번호 QR + 품목 명세. */
+    public function outboundOrder(Outbound $outbound, LabelService $svc): View
+    {
+        $outbound->load(['warehouse', 'hospital', 'items.product', 'items.lot']);
+
+        return view('documents.order-sheet', [
+            'title' => '출고지시서',
+            'docNo' => $outbound->outbound_no,
+            'qr' => $svc->qrDataUri($outbound->outbound_no, 160),
+            'fromLabel' => '출고 창고',
+            'fromName' => $outbound->warehouse->name,
+            'toLabel' => '납품 병원',
+            'toName' => $outbound->hospital->name,
+            'meta' => [
+                ['출고예정일', $outbound->planned_date?->toDateString() ?? '-'],
+                ['구분', $outbound->source_type->label()],
+                ['상태', $outbound->status->label()],
+            ],
+            'items' => $outbound->items->map(fn ($it) => [
+                'code' => $it->product->product_code,
+                'name' => $it->product->product_name,
+                'lot' => $it->lot_id !== null ? $it->lot->lot_no : '미배정',
+                'expiry' => $it->lot_id !== null ? ($it->lot->expiry_date?->toDateString() ?? '-') : '-',
+                'qty' => (int) $it->qty,
+            ])->all(),
+            'signLeft' => '창고 담당',
+            'signRight' => '병원 인수',
+        ]);
+    }
+
+    /** 반품 출고지시서 — 반품번호 QR + 품목 명세(병원 → 창고). */
+    public function returnOrder(StockReturn $return, LabelService $svc): View
+    {
+        $return->load(['hospital', 'warehouse', 'items.product', 'items.lot']);
+
+        return view('documents.order-sheet', [
+            'title' => '반품 출고지시서',
+            'docNo' => $return->return_no,
+            'qr' => $svc->qrDataUri($return->return_no, 160),
+            'fromLabel' => '반납 병원',
+            'fromName' => $return->hospital->name,
+            'toLabel' => '입고 창고',
+            'toName' => $return->warehouse->name,
+            'meta' => [
+                ['등록일', $return->created_at?->timezone('Asia/Seoul')?->format('Y-m-d') ?? '-'],
+                ['상태', $return->status->label()],
+                ['사유', $return->reason ?? '-'],
+            ],
+            'items' => $return->items->map(fn ($it) => [
+                'code' => $it->product->product_code,
+                'name' => $it->product->product_name,
+                'lot' => $it->lot->lot_no,
+                'expiry' => $it->lot->expiry_date?->toDateString() ?? '-',
+                'qty' => (int) $it->qty,
+            ])->all(),
+            'signLeft' => '병원 담당',
+            'signRight' => '창고 인수',
         ]);
     }
 }

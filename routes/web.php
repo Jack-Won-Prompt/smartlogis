@@ -128,6 +128,10 @@ Route::middleware('auth')->group(function () {
     Route::get('/outbounds/{outbound}/labels', [LabelController::class, 'outbound'])->middleware('role:HQ,WAREHOUSE')->name('outbounds.labels');
     Route::get('/inbounds/{inbound}/labels', [LabelController::class, 'inbound'])->middleware('role:HQ,WAREHOUSE,SUPPLIER')->name('inbounds.labels');
 
+    // 출고지시서 / 반품 출고지시서 (주문번호 QR 포함, 인쇄용)
+    Route::get('/outbounds/{outbound}/order', [LabelController::class, 'outboundOrder'])->middleware('role:HQ,WAREHOUSE')->name('outbounds.order');
+    Route::get('/returns/{return}/order', [LabelController::class, 'returnOrder'])->middleware('role:HQ,WAREHOUSE,HOSPITAL,LIFE')->name('returns.order');
+
     // 반납(병원 → 창고) — 등록(병원/라이프) → 배송 → 수령확인(창고/본사)
     Route::prefix('returns')->name('returns.')->controller(ReturnController::class)->group(function () {
         Route::get('/', 'index')->middleware('role:HQ,WAREHOUSE,HOSPITAL,LIFE')->name('index');

@@ -57,6 +57,7 @@
             </table>
         </x-slot:items>
         <x-slot:actions>
+            <button type="button" @click="window.open('{{ url('returns') }}/'+doc.id+'/order','_blank')" class="rounded-xl border border-line px-4 py-2 text-sm font-semibold text-ink-700 hover:bg-surface-2">📄 반품지시서</button>
             <template x-if="doc.status==='REQUESTED'">
                 <button @click="act('{{ url('returns') }}/'+doc.id+'/ship')" :disabled="saving" class="rounded-xl border border-line px-4 py-2 text-sm font-semibold text-brand-600 hover:bg-brand-50">배송 시작</button>
             </template>
