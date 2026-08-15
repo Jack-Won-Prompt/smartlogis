@@ -1,6 +1,9 @@
-7fee8d809e524cf6497f88557d57f9bd0c63b28d6fe7a49dfed5cac4e33685be *smartlogis-1.0.0-arm32.apk
-b2a2d462dd09bbcdd92a5ece93fbb6c53bc6ebc8051de087fcc44d2cd7fcd268 *smartlogis-1.0.0-arm64.apk
-e81e9290d9b7ce99c6737be538adb14bb3ebfb4f351190633c9615b44f231176 *smartlogis-1.0.0-universal.apk
-02047e5fcc7e973f6784b4096bafb7396fa258092ba6932cbdb5210f2dc18a57 *smartlogis-1.0.1-arm32.apk
-c239eb9e57511b43fe0206dfe9457ab89b769deaa018eb6e258ab3a8eac440da *smartlogis-1.0.1-arm64.apk
-910393ee929bd25764a1c9ff29e53bb352c8f58b7bc1790dfebed99a6303baa8 *smartlogis-1.0.1-universal.apk
+7fee8d809e524cf6497f88557d57f9bd0c63b28d6fe7a49dfed5cac4e33685be  smartlogis-1.0.0-arm32.apk
+b2a2d462dd09bbcdd92a5ece93fbb6c53bc6ebc8051de087fcc44d2cd7fcd268  smartlogis-1.0.0-arm64.apk
+e81e9290d9b7ce99c6737be538adb14bb3ebfb4f351190633c9615b44f231176  smartlogis-1.0.0-universal.apk
+02047e5fcc7e973f6784b4096bafb7396fa258092ba6932cbdb5210f2dc18a57  smartlogis-1.0.1-arm32.apk
+c239eb9e57511b43fe0206dfe9457ab89b769deaa018eb6e258ab3a8eac440da  smartlogis-1.0.1-arm64.apk
+910393ee929bd25764a1c9ff29e53bb352c8f58b7bc1790dfebed99a6303baa8  smartlogis-1.0.1-universal.apk
+b89dd7b345140abc93ff59b03975886500a34847bb7933699ac74139a4a23cd1  smartlogis-1.1.0-arm32.apk
+501abf12da57c2e310bf26a51f3481549515dc7f8df66b9bba6b6f722bb112a0  smartlogis-1.1.0-arm64.apk
+ccbf5940493a320f2d2acddad85090bb4983333ad93741d897417964f5814e08  smartlogis-1.1.0-universal.apk
