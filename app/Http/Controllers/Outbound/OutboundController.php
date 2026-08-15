@@ -54,9 +54,9 @@ class OutboundController extends Controller
                 'delivered_at' => $o->delivered_at?->timezone('Asia/Seoul')?->format('Y-m-d H:i'),
                 'signer_name' => $o->deliveryProof?->signer_name,
                 'signature_url' => $o->deliveryProof?->signatureUrl(),
-                'photos' => ($o->deliveryProof?->photos ?? collect())
-                    ->map(fn ($ph) => ['id' => $ph->id, 'url' => $ph->url(), 'name' => $ph->file_name])
-                    ->values()->all(),
+                'photos' => $o->deliveryProof !== null
+                    ? $o->deliveryProof->photos->map(fn ($ph) => ['id' => $ph->id, 'url' => $ph->url(), 'name' => $ph->file_name])->values()->all()
+                    : [],
             ])->all(),
         ]);
     }

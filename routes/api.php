@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\CatalogController;
 use App\Http\Controllers\Api\V1\ChatController;
 use App\Http\Controllers\Api\V1\DashboardController;
+use App\Http\Controllers\Api\V1\DeliveryController;
 use App\Http\Controllers\Api\V1\InboundController;
 use App\Http\Controllers\Api\V1\InventoryController;
 use App\Http\Controllers\Api\V1\NotificationController;
@@ -79,6 +80,16 @@ Route::middleware('api.token')->group(function () {
         Route::get('/expiry', [InventoryController::class, 'expiry']);
         Route::get('/shortages', [InventoryController::class, 'shortages']);
         Route::get('/lots/{lotId}/trace', [InventoryController::class, 'trace'])->whereNumber('lotId');
+    });
+
+    // ---------------------------------------------------------------- 배송 처리
+    // 기사가 병원에서 물건을 넘기며 남기는 현장 증빙(사진 + 인수 서명).
+    // 서명을 받으면 배송 완료까지 처리되므로 보내는 쪽(창고/본사)으로 제한한다.
+    Route::middleware('role:HQ,WAREHOUSE')->prefix('delivery')->group(function () {
+        Route::get('/lookup', [DeliveryController::class, 'lookup']);
+        Route::post('/{id}/photos', [DeliveryController::class, 'storePhoto'])->whereNumber('id');
+        Route::post('/{id}/complete', [DeliveryController::class, 'complete'])->whereNumber('id');
+        Route::delete('/photos/{photoId}', [DeliveryController::class, 'destroyPhoto'])->whereNumber('photoId');
     });
 
     // ---------------------------------------------------------------- 재고 실사

@@ -314,9 +314,9 @@
                     { title:'상태', field:'status_label', width:100 },
                     @endif
                     // 모바일 배송 처리에서 올라온 현장 증빙 — 셀에서 바로 확인한다.
-                    { title:'배송', field:'delivered', width:132, renderer:(v,row)=>proofDelivered(row) },
-                    { title:'사진', field:'photos', width:130, renderer:(v,row)=>proofPhotos(row) },
-                    { title:'서명', field:'signature_url', width:110, renderer:(v,row)=>proofSignature(row) },
+                    { title:'배송', field:'delivered', width:132, sortable:false, renderer:(v,row)=>proofDelivered(row) },
+                    { title:'사진', field:'photos', width:130, sortable:false, renderer:(v,row)=>proofPhotos(row) },
+                    { title:'서명', field:'signature_url', width:110, sortable:false, renderer:(v,row)=>proofSignature(row) },
                 ],
             });
             let t;

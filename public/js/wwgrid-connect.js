@@ -47,6 +47,9 @@
                 else col.editor = 'text';
             }
             if (c.defaultValue !== undefined) col.defaultValue = c.defaultValue;
+            // 셀을 직접 그리는 컬럼 — wwGrid 가 renderer(value,row,rowIndex,col) 를 지원하는데
+            // 여기서 흘려보내지 않아 쓸 수 없었다. 썸네일·버튼이 들어가는 셀에 필요하다.
+            if (typeof c.renderer === 'function') col.renderer = c.renderer;
             return col;
         });
     }

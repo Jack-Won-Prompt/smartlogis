@@ -14,6 +14,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Carbon;
 
 /**
@@ -28,6 +29,7 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $planned_date
  * @property Carbon|null $shipped_at
  * @property Carbon|null $delivered_at
+ * @property-read DeliveryProof|null $deliveryProof
  */
 #[ScopedBy(HospitalScope::class)]
 class Outbound extends Model
@@ -80,6 +82,16 @@ class Outbound extends Model
     public function items(): HasMany
     {
         return $this->hasMany(OutboundItem::class);
+    }
+
+    /**
+     * 배송 증빙(현장 사진 + 인수 서명). 출고 1건에 1건.
+     *
+     * @return HasOne<DeliveryProof, $this>
+     */
+    public function deliveryProof(): HasOne
+    {
+        return $this->hasOne(DeliveryProof::class);
     }
 
     /**
